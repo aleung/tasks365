@@ -16,13 +16,14 @@
  * limitations under the License.
  */
 
-package android.provider;
+package leoliang.tasks365.calendar;
 
 import android.accounts.Account;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.database.Cursor;
 import android.net.Uri;
+import android.provider.BaseColumns;
 import android.text.TextUtils;
 
 /**
@@ -273,10 +274,9 @@ public final class Calendar {
             return cr.query(CONTENT_URI, projection, null, null, DEFAULT_SORT_ORDER);
         }
 
-        public static final Cursor query(ContentResolver cr, String[] projection,
-                                       String where, String orderBy) {
-            return cr.query(CONTENT_URI, projection, where,
-                                         null, orderBy == null ? DEFAULT_SORT_ORDER : orderBy);
+        public static final Cursor query(ContentResolver cr, String[] projection, String where, String[] whereArgs,
+                String orderBy) {
+            return cr.query(CONTENT_URI, projection, where, whereArgs, orderBy == null ? DEFAULT_SORT_ORDER : orderBy);
         }
     }
 
@@ -617,6 +617,7 @@ public final class Calendar {
         }
     }
 
+    /** Authority of calendar provider in Android 2.2 */
     public static final String AUTHORITY = "com.android.calendar";
 
     /**

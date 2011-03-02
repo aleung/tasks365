@@ -18,6 +18,8 @@ import leoliang.tasks365.calendar.TagParser.TagParseResult;
  */
 public class Task {
 
+    private static final String LOG_TAG = "tasks365.Task";
+
     private static final String TAG_NEW = "new";
     private static final String TAG_STAR = "star";
     private static final String TAG_DONE = "done";
@@ -75,6 +77,10 @@ public class Task {
      * @param s
      */
     public void setDescriptionWithTags(String s) {
+        //        Log.v(LOG_TAG, "setDescriptionWithTags(" + s + ")");
+        if (s == null) {
+            return;
+        }
         TagParseResult parseResult = TagParser.getInstance().parse(s);
         description = parseResult.text.trim();
         for (String tag : parseResult.tags) {
@@ -100,6 +106,9 @@ public class Task {
      * @param s
      */
     public void setTitleWithTags(String s) {
+        if (s == null) {
+            return;
+        }
         TagParseResult parseResult = TagParser.getInstance().parse(s);
         title = parseResult.text.trim();
         for (String tag : parseResult.tags) {

@@ -30,33 +30,28 @@
  */
 package leoliang.tasks365.calendar;
 
-import android.app.Activity;
+import java.util.Date;
+
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
 public class AndroidCalendar {
 
-    public class Event {
-    }
-
-    public static final String CALENDAR_FIELD_NAME = "name";
-
-
-    public static final String CALENDAR_FIELD_DISPLAY_NAME = "displayName";
-    public static final String PATH_EVENTS = "events";
-    public static final String PATH_DELETED_EVENTS = "deleted_events";
-
-    public static final String PATH_CALENDARS = "calendars";
-
-    private static final String QUERY_CRITERIA_SELECTED_CALENDAR = "selected=1";
-
     private static final String DEBUG_TAG = "tasks365.AndroidCalendar";
-    private Activity activity;
 
-    private String calendarUriBase;
+    private static final String[] TASK_PROJECTION = { Calendar.Events._ID, Calendar.Events.TITLE,
+            Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND, Calendar.Events.ALL_DAY };
+    private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
+    private static final String TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
+            + Calendar.Events.DTEND + ">? AND " + Calendar.Events.DTSTART + "<?";
+    private static final String[] CALENDAR_PROJECTION = { Calendar.Calendars._ID, Calendar.Calendars.DISPLAY_NAME,
+            Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
+
+    private Context context;
 
     /**
      * Read the task at cursor current location.
@@ -66,147 +61,126 @@ public class AndroidCalendar {
      */
     public static Task readTask(Cursor c) {
         Task task = new Task();
-        task.id = c.getLong(c.getColumnIndexOrThrow(BaseColumns.ID));
-        task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(EVENT_FIELD_TITLE)));
-        task.setDescriptionWithTags(c.getString(c.getColumnIndexOrThrow(EVENT_FIELD_DESCRIPTION)));
-        task.startTime = c.getLong(c.getColumnIndexOrThrow(EVENT_FIELD_START_TIME));
-        task.endTime = c.getLong(c.getColumnIndexOrThrow(EVENT_FIELD_END_TIME));
-        task.isAllDay = c.getInt(c.getColumnIndexOrThrow(EVENT_FIELD_IS_ALL_DAY)) == 1 ? true : false;
+        task.id = c.getLong(c.getColumnIndexOrThrow(Calendar.Events._ID));
+        task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
+        task.setDescriptionWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
+        task.startTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTSTART));
+        task.endTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTEND));
+        task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
         Log.v(DEBUG_TAG, "Read task. ID=" + task.id);
         return task;
     }
 
-    public AndroidCalendar(Activity activity) {
-        this.activity = activity;
-        calendarUriBase = getCalendarUriBase();
-        // TODO: if (calendarUriBase == null) { throw new Exception(); }
+    public AndroidCalendar(Context context) {
+        this.context = context;
+        // TODO: compatible to different calendar provider URI
+        // calendarUriBase = getCalendarUriBase();
+        // if (calendarUriBase == null) { throw new Exception(); }
     }
 
-    public Uri addEvent(ContentValues event) {
-        Uri eventsUri = Uri.parse(calendarUriBase + PATH_EVENTS);
-        Uri insertedUri = activity.getContentResolver().insert(eventsUri, event);
-        Log.d(DEBUG_TAG, "Added event " + insertedUri);
-        return insertedUri;
-    }
-
-    public void addEvent(int calendarId, String title, long startTime, boolean isAllDay) {
-        ContentValues event = new ContentValues();
-        event.put(EVENT_FIELD_CALENDAR_ID, calendarId);
-        event.put(EVENT_FIELD_TITLE, title);
-        event.put(EVENT_FIELD_START_TIME, startTime);
-        event.put(EVENT_FIELD_END_TIME, startTime);
-        event.put(EVENT_FIELD_IS_ALL_DAY, isAllDay ? 1 : 0);
-        addEvent(event);
-    }
-
-    public Cursor getAllEvents(int calendarId) {
-        String[] projection = new String[] { BaseColumns.ID, EVENT_FIELD_TITLE };
-        return getCalendarManagedCursor(projection, "calendar_id=" + calendarId, PATH_EVENTS);
-    }
-
-    public Cursor getAllSelectedCalendars() {
-        String[] projection = new String[] { "_id", "name" };
-        return getAllSelectedCalendars(projection);
-    }
-
-    public Cursor getAllSelectedCalendars(String[] projection) {
-        String selection = QUERY_CRITERIA_SELECTED_CALENDAR;
-        return getCalendarManagedCursor(projection, selection, PATH_CALENDARS);
+    public void deleteTask(long taskId) {
+        Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, taskId);
+        context.getContentResolver().delete(uri, null, null);
     }
 
     /**
-     * Find calendar by name and return the ID.
-     * 
-     * @param calendarName
-     * @return null if not found
+     * @return all calendars
      */
-    public String getCalendarId(String calendarName) {
-        String[] projection = new String[] { BaseColumns.ID, CALENDAR_FIELD_NAME };
-        Cursor cursor = getCalendarManagedCursor(projection, QUERY_CRITERIA_SELECTED_CALENDAR + " AND "
-                + CALENDAR_FIELD_NAME + "='" + calendarName + "'", PATH_CALENDARS);
-        if (cursor.moveToFirst()) {
-            return cursor.getString(0);
-        }
-        return null;
+    public Cursor queryCalendars() {
+        return Calendar.Calendars.query(context.getContentResolver(), CALENDAR_PROJECTION, null, null);
     }
 
     /**
-     * <ul>
-     * <li>All events in a calendar: selection="calendar_id="+calendarId, path=null</li>
-     * <li>Specific event: selection=null, path="events/"+eventId</li>
-     * <li>Deleted events: selection=null, path="deleted_events/"+eventId</li>
-     * <li>All calendars: selection=null, path="calendars"</li>
-     * <li>Active calendars: selection="selected=1", path="calendars"</li>
-     * <li>Specific calendar by name: selection="name="+name, path="calendars"</li>
-     * </ul>
+     * Query tasks which are scheduled in one day (0:00 ~ 24:00 in system's time zone).
      * 
-     * @param activity
-     * @param projection
-     * @param selection
-     * @param path
+     * @param calendarId
+     * @param date
      * @return
      */
-    public Cursor getCalendarManagedCursor(String[] projection, String selection, String path) {
-        Uri calendars = Uri.parse(calendarUriBase + path);
-
-        Cursor managedCursor = null;
-        try {
-            managedCursor = activity.managedQuery(calendars, projection, selection, null, null);
-        } catch (IllegalArgumentException e) {
-            Log.w(DEBUG_TAG, "Failed to get provider at [" + calendars.toString() + "]");
-        }
-        return managedCursor;
+    public Cursor queryTasksByDate(long calendarId, java.util.Calendar date) {
+        java.util.Calendar from = java.util.Calendar.getInstance();
+        from.set(date.get(java.util.Calendar.YEAR), date.get(java.util.Calendar.MONTH),
+                date.get(java.util.Calendar.DAY_OF_MONTH), 0, 0, 0);
+        java.util.Calendar to = (java.util.Calendar) from.clone();
+        to.add(java.util.Calendar.DAY_OF_MONTH, 1);
+        return queryTasksByTimeRange(calendarId, from.getTime(), to.getTime());
     }
 
-
-    public int updateEvent(int entryID, ContentValues event) {
-        Uri eventsUri = Uri.parse(calendarUriBase + "events");
-        Uri eventUri = ContentUris.withAppendedId(eventsUri, entryID);
-
-        int iNumRowsUpdated = activity.getContentResolver().update(eventUri, event, null, null);
-
-        Log.i(DEBUG_TAG, "Updated " + iNumRowsUpdated + " calendar entry.");
-
-        return iNumRowsUpdated;
+    /**
+     * Query tasks which are scheduled in a range of time.
+     * 
+     * @param calendarId
+     * @param from
+     * @param to
+     * @return
+     */
+    public Cursor queryTasksByTimeRange(long calendarId, Date from, Date to) {
+        String[] whereArgs = new String[3];
+        whereArgs[0] = String.valueOf(calendarId);
+        whereArgs[1] = String.valueOf(from.getTime());
+        whereArgs[2] = String.valueOf(to.getTime());
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION, TASK_SELECTION_CRITERIA,
+                whereArgs, TASK_SORT_ORDER);
+        return cursor;
     }
 
-    private int DeleteEvent(int eventId) {
-        int iNumRowsDeleted = 0;
+    /**
+     * Query tasks which were scheduled in passed days (before 0:00 of today in system's time zone).
+     * 
+     * @param calendarId
+     * @return
+     */
+    public Cursor queryTasksInPassedDays(long calendarId) {
+        java.util.Calendar from = java.util.Calendar.getInstance();
+        from.clear();
+        java.util.Calendar to = java.util.Calendar.getInstance();
+        to.clear(java.util.Calendar.HOUR_OF_DAY);
+        to.clear(java.util.Calendar.MINUTE);
+        to.clear(java.util.Calendar.SECOND);
+        to.clear(java.util.Calendar.MILLISECOND);
+        return queryTasksByTimeRange(calendarId, from.getTime(), to.getTime());
+    }
 
-        Uri eventsUri = Uri.parse(calendarUriBase + PATH_EVENTS);
-        Uri eventUri = ContentUris.withAppendedId(eventsUri, eventId);
-        iNumRowsDeleted = activity.getContentResolver().delete(eventUri, null, null);
-
-        Log.i(DEBUG_TAG, "Deleted " + iNumRowsDeleted + " calendar entry.");
-
-        return iNumRowsDeleted;
+    /**
+     * @param task
+     */
+    public void updateTask(Task task) {
+        Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, task.id);
+        ContentValues values = new ContentValues();
+        values.put(Calendar.Events.TITLE, task.getTitleWithTags());
+        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithTags());
+        values.put(Calendar.Events.DTSTART, task.startTime);
+        values.put(Calendar.Events.DTEND, task.endTime);
+        values.put(Calendar.Events.ALL_DAY, task.isAllDay ? 1 : 0);
+        context.getContentResolver().update(uri, values, null, null);
     }
 
     /**
      * Determines if it's a pre 2.1 or a 2.2 calendar Uri, and returns the Uri
      */
-    // TODO: not use managedQuery(), close the query after used
     private String getCalendarUriBase() {
         String calendarUriBase = null;
         Uri calendars = Uri.parse("content://calendar/calendars");
-        Cursor managedCursor = null;
+        Cursor cursor = null;
         try {
-            managedCursor = activity.managedQuery(calendars, null, null, null, null);
+            // TODO: set URI base
+            cursor = Calendar.Calendars.query(context.getContentResolver(), CALENDAR_PROJECTION, null, null);
         } catch (Exception e) {
             // eat
         }
 
-        if (managedCursor != null) {
+        if (cursor != null) {
             calendarUriBase = "content://calendar/";
         } else {
             calendars = Uri.parse("content://com.android.calendar/calendars");
             try {
-                managedCursor = activity.managedQuery(calendars, null, null, null, null);
+                // TODO: set URI base
+                cursor = Calendar.Calendars.query(context.getContentResolver(), CALENDAR_PROJECTION, null, null);
             } catch (Exception e) {
                 // eat
             }
 
-            if (managedCursor != null) {
+            if (cursor != null) {
                 calendarUriBase = "content://com.android.calendar/";
             }
 

@@ -44,6 +44,14 @@ public class TaskTest extends TestCase {
         assertEquals("description", task.getDescriptionWithTags());
     }
 
+    public void testDescriptionTags5() {
+        Task task = new Task();
+        task.setDescriptionWithTags("");
+        assertNull(task.due);
+        assertEquals("", task.description);
+        assertEquals("", task.getDescriptionWithTags());
+    }
+
     public void testTitleTags1() {
         Task task = new Task();
         assertFalse(task.isNew);
