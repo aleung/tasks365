@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Formatter;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,6 +29,7 @@ public class Task {
 
     // fields directly maps to content provider data model
     public long id;
+    public long calendarId;
     public long startTime;
     public long endTime;
     public boolean isAllDay = true;
@@ -49,7 +51,9 @@ public class Task {
         if (due != null) {
             addTag(s, TAG_DUE + dateFormat.format(due.getTime()));
         }
-        s.append(description.trim());
+        if (description != null) {
+            s.append(description.trim());
+        }
         return s.toString();
     }
 
@@ -64,7 +68,9 @@ public class Task {
         if (isNew) {
             addTag(s, TAG_NEW);
         }
-        s.append(title.trim());
+        if (title != null) {
+            s.append(title.trim());
+        }
         return s.toString();
     }
 
@@ -127,11 +133,21 @@ public class Task {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder s = new StringBuilder();
+        Formatter formatter = new Formatter(s);
+        formatter.format("{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%d, endTime:%d}", id, calendarId,
+                title, isAllDay, startTime, endTime);
+        return s.toString();
+    }
+
     private void addTag(StringBuilder s, String tag) {
         s.append('#');
         s.append(tag);
         s.append(' ');
     }
+
 }
 
 class TagParser {
@@ -165,4 +181,5 @@ class TagParser {
         String text = inputText.substring(end);
         return new TagParseResult(tags, text);
     }
+
 }

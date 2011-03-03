@@ -41,10 +41,11 @@ import android.util.Log;
 
 public class AndroidCalendar {
 
-    private static final String DEBUG_TAG = "tasks365.AndroidCalendar";
+    private static final String LOG_TAG = "tasks365.AndroidCalendar";
 
-    private static final String[] TASK_PROJECTION = { Calendar.Events._ID, Calendar.Events.TITLE,
-            Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND, Calendar.Events.ALL_DAY };
+    private static final String[] TASK_PROJECTION = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
+            Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND,
+            Calendar.Events.ALL_DAY };
     private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
     private static final String TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
             + Calendar.Events.DTEND + ">? AND " + Calendar.Events.DTSTART + "<?";
@@ -62,12 +63,13 @@ public class AndroidCalendar {
     public static Task readTask(Cursor c) {
         Task task = new Task();
         task.id = c.getLong(c.getColumnIndexOrThrow(Calendar.Events._ID));
+        task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
         task.setDescriptionWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
         task.startTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTSTART));
         task.endTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTEND));
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
-        Log.v(DEBUG_TAG, "Read task. ID=" + task.id);
+        Log.v(LOG_TAG, "Read task. " + task);
         return task;
     }
 
@@ -76,6 +78,21 @@ public class AndroidCalendar {
         // TODO: compatible to different calendar provider URI
         // calendarUriBase = getCalendarUriBase();
         // if (calendarUriBase == null) { throw new Exception(); }
+    }
+
+    public void createTask(Task task) {
+        ContentValues values = new ContentValues();
+        values.put(Calendar.Events.CALENDAR_ID, task.calendarId);
+        values.put(Calendar.Events.TITLE, task.getTitleWithTags());
+        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithTags());
+        values.put(Calendar.Events.DTSTART, task.startTime);
+        values.put(Calendar.Events.DTEND, task.endTime);
+        values.put(Calendar.Events.ALL_DAY, task.isAllDay ? 1 : 0);
+        Uri uri = context.getContentResolver().insert(Calendar.Events.CONTENT_URI, values);
+        if (uri == null) {
+            // TODO: throw new CalendarException();
+        }
+        Log.d(LOG_TAG, "New task created: " + uri);
     }
 
     public void deleteTask(long taskId) {
