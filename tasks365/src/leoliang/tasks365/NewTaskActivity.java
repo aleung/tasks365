@@ -56,6 +56,7 @@ public class NewTaskActivity extends Activity {
             task.description = text.substring(firstLineBreakPosition);
         }
 
+        // No use for all day even, calendar always set all day even to 1AM - 1AM
         Calendar time = Calendar.getInstance();
         time.set(Calendar.HOUR_OF_DAY, 23);
         time.set(Calendar.MINUTE, 59);

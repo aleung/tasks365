@@ -1,5 +1,8 @@
 package leoliang.tasks365;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 import leoliang.tasks365.calendar.AndroidCalendar;
 import leoliang.tasks365.calendar.Task;
 import android.content.Context;
@@ -79,7 +82,13 @@ public class DayViewCursorAdapter extends CursorAdapter {
     private void bindViewForOpenTask(View view, Task task) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
         viewHolder.title.setText(task.title);
+        viewHolder.tags.setText(formatStartAndEndTime(task.startTime, task.endTime));
         // TODO: tags, daysToDue
+    }
+
+    private String formatStartAndEndTime(long startTime, long endTime) {
+        DateFormat formatter = DateFormat.getTimeInstance();
+        return formatter.format(new Date(startTime)) + " - " + formatter.format(new Date(endTime));
     }
 
     private View newViewForCompletedTask() {

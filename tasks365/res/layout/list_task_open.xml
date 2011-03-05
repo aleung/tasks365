@@ -8,22 +8,22 @@
     <FrameLayout android:id="@+id/statusIndicator"
             android:layout_width="20dip" android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:paddingTop="10dip">
+            android:paddingTop="14dip">
         <TextView android:id="@+id/daysToDue"
                 android:layout_width="fill_parent" android:layout_height="wrap_content"
                 android:visibility="invisible"/>
     </FrameLayout>
     
     <TextView android:id="@+id/tags"
-            android:layout_width="wrap_content" android:layout_height="10dip"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_toRightOf="@+id/statusIndicator" android:layout_toLeftOf="@+id/dragHandle" 
-            android:textSize="10sp" />
+            android:textSize="14sp" />
 
     <TextView android:id="@+id/taskTitle"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_toRightOf="@+id/statusIndicator" android:layout_toLeftOf="@+id/dragHandle" 
             android:layout_below="@+id/tags"
-            android:textSize="18sp" />
+            android:textSize="20sp" />
 
     <FrameLayout android:id="@+id/dragHandle"
             android:layout_width="wrap_content" android:layout_height="fill_parent"
