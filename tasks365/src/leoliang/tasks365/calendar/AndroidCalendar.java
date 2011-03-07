@@ -64,11 +64,12 @@ public class AndroidCalendar {
         Task task = new Task();
         task.id = c.getLong(c.getColumnIndexOrThrow(Calendar.Events._ID));
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
-        task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
-        task.setDescriptionWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
         task.startTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTSTART));
         task.endTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTEND));
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
+        task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
+        // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
+        task.setDescriptionWithExtraData(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
         Log.v(LOG_TAG, "Read task. " + task);
         return task;
     }
@@ -84,7 +85,7 @@ public class AndroidCalendar {
         ContentValues values = new ContentValues();
         values.put(Calendar.Events.CALENDAR_ID, task.calendarId);
         values.put(Calendar.Events.TITLE, task.getTitleWithTags());
-        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithTags());
+        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
         values.put(Calendar.Events.DTSTART, task.startTime);
         values.put(Calendar.Events.DTEND, task.endTime);
         values.put(Calendar.Events.ALL_DAY, task.isAllDay ? 1 : 0);
@@ -165,7 +166,7 @@ public class AndroidCalendar {
         Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, task.id);
         ContentValues values = new ContentValues();
         values.put(Calendar.Events.TITLE, task.getTitleWithTags());
-        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithTags());
+        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
         values.put(Calendar.Events.DTSTART, task.startTime);
         values.put(Calendar.Events.DTEND, task.endTime);
         values.put(Calendar.Events.ALL_DAY, task.isAllDay ? 1 : 0);

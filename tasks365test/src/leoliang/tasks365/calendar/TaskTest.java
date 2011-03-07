@@ -8,48 +8,67 @@ public class TaskTest extends TestCase {
 
     public void testDescriptionTags1() {
         Task task = new Task();
+        task.isAllDay = false;
         assertNull(task.due);
-        task.setDescriptionWithTags("#new  #star #due");
+        task.setDescriptionWithExtraData("#new  #star {due:\"20100328\"}");
         assertNull(task.due);
         assertFalse(task.isNew);
         assertFalse(task.isStarred);
         assertFalse(task.isDone);
-        assertEquals("", task.description);
-        assertEquals("", task.getDescriptionWithTags());
+        assertEquals("#new  #star {due:\"20100328\"}", task.description);
+        assertEquals("#new  #star {due:\"20100328\"}", task.getDescriptionWithExtraData());
+    }
+
+    public void testDescriptionTags1a() {
+        Task task = new Task();
+        task.isAllDay = false;
+        assertNull(task.due);
+        task.setDescriptionWithExtraData("description --- DO NOT MODIFY BELOW ---\n-#%#-{due:\"20100328\"}");
+        assertNull(task.due);
+        assertEquals("description --- DO NOT MODIFY BELOW ---\n-#%#-{due:\"20100328\"}", task.description);
+        assertEquals("description --- DO NOT MODIFY BELOW ---\n-#%#-{due:\"20100328\"}",
+                task.getDescriptionWithExtraData());
     }
 
     public void testDescriptionTags2() {
         Task task = new Task();
-        task.setDescriptionWithTags("#new  #due:20100328  description");
+        task.isAllDay = false;
+        task.setDescriptionWithExtraData("description\n--- DO NOT MODIFY BELOW ---\n-#%#-{due:\"20100328\"}-#%#- ignored");
         assertEquals(2010, task.due.get(Calendar.YEAR));
         assertEquals(2, task.due.get(Calendar.MONTH));
         assertEquals(28, task.due.get(Calendar.DAY_OF_MONTH));
         assertEquals("description", task.description);
-        assertEquals("#due:20100328 description", task.getDescriptionWithTags());
+        assertEquals("description\n\n--- DO NOT MODIFY BELOW ---\n-#%#-{\"due\":\"20100328\"}-#%#-",
+                task.getDescriptionWithExtraData());
     }
 
     public void testDescriptionTags3() {
         Task task = new Task();
-        task.setDescriptionWithTags("#due:2010-3-28  description");
+        task.isAllDay = false;
+        task.setDescriptionWithExtraData("description\n--- DO NOT MODIFY BELOW ---\n-#%#-{due:\"2010-3-28\"}-#%#-");
         assertNull(task.due);
-        assertEquals("-3-28  description", task.description);
-        assertEquals("-3-28  description", task.getDescriptionWithTags());
+        assertEquals("description", task.description);
+        assertEquals("description", task.getDescriptionWithExtraData());
     }
 
     public void testDescriptionTags4() {
         Task task = new Task();
-        task.setDescriptionWithTags("#due:2010feb23  description");
+        task.setDescriptionWithExtraData("--- DO NOT MODIFY BELOW ---\n-#%#-{startTime:1,endTime:2}-#%#-");
         assertNull(task.due);
-        assertEquals("description", task.description);
-        assertEquals("description", task.getDescriptionWithTags());
+        assertEquals(1, task.startTime);
+        assertEquals(2, task.endTime);
+        assertEquals("", task.description);
+        assertEquals("\n\n--- DO NOT MODIFY BELOW ---\n-#%#-{\"startTime\":1,\"endTime\":2}-#%#-",
+                task.getDescriptionWithExtraData());
     }
 
     public void testDescriptionTags5() {
         Task task = new Task();
-        task.setDescriptionWithTags("");
+        task.isAllDay = false;
+        task.setDescriptionWithExtraData("");
         assertNull(task.due);
         assertEquals("", task.description);
-        assertEquals("", task.getDescriptionWithTags());
+        assertEquals("", task.getDescriptionWithExtraData());
     }
 
     public void testTitleTags1() {

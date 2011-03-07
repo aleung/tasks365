@@ -1,7 +1,7 @@
 package leoliang.tasks365.calendar;
 
 import java.text.DateFormat;
-import java.text.ParsePosition;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -14,17 +14,23 @@ import java.util.regex.Pattern;
 
 import leoliang.tasks365.calendar.TagParser.TagParseResult;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.util.Log;
+
 /**
  * This class stores information of a task in calendar.
  */
 public class Task {
 
     private static final String LOG_TAG = "tasks365.Task";
-
     private static final String TAG_NEW = "new";
     private static final String TAG_STAR = "star";
     private static final String TAG_DONE = "done";
-    private static final String TAG_DUE = "due:";
+    private static final String EXTRA_DATA_MAGIC_STRING = "-#%#-";
+    private static final String EXTRA_DATA_SEPERATOR = "--- DO NOT MODIFY BELOW ---\n";
+
     private static final DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
     // fields directly maps to content provider data model
@@ -40,20 +46,20 @@ public class Task {
     /** pure description, without tags */
     public String description;
 
-    // fields stored as tags
+    // extra fields stored in tags
     public boolean isDone = false;
     public boolean isNew = false;
     public boolean isStarred = false;
+
+    // extra fields stored in JSON
     public Calendar due = null;
 
-    public String getDescriptionWithTags() {
+    public String getDescriptionWithExtraData() {
         StringBuilder s = new StringBuilder();
-        if (due != null) {
-            addTag(s, TAG_DUE + dateFormat.format(due.getTime()));
-        }
         if (description != null) {
             s.append(description.trim());
         }
+        constructExtraDataJson(s);
         return s.toString();
     }
 
@@ -75,30 +81,22 @@ public class Task {
     }
 
     /**
-     * Tags can be put inside description:
+     * Extra data can be put as JSON inside description:
      * <ul>
-     * <li>#due:YYYY-MM-DD</li>
+     * <li>due : string in pattern YYYY-MM-DD</li>
+     * <li>startTime : long, exists when isAllDay is true</li>
+     * <li>endTime : long, exists when isAllDay is true</li>
      * </ul>
+     * 
+     * FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
      * 
      * @param s
      */
-    public void setDescriptionWithTags(String s) {
-        //        Log.v(LOG_TAG, "setDescriptionWithTags(" + s + ")");
+    public void setDescriptionWithExtraData(String s) {
         if (s == null) {
             return;
         }
-        TagParseResult parseResult = TagParser.getInstance().parse(s);
-        description = parseResult.text.trim();
-        for (String tag : parseResult.tags) {
-            if (tag.startsWith(TAG_DUE)) {
-                Date date = dateFormat.parse(tag, new ParsePosition(TAG_DUE.length()));
-                if (date != null) {
-                    due = GregorianCalendar.getInstance();
-                    due.setTime(date);
-                }
-                continue;
-            }
-        }
+        ExtraDataParser.getInstance().parse(s, this);
     }
 
     /**
@@ -146,6 +144,69 @@ public class Task {
         s.append('#');
         s.append(tag);
         s.append(' ');
+    }
+
+    private void constructExtraDataJson(StringBuilder s) {
+        try {
+            JSONObject json = new JSONObject();
+            if (due != null) {
+                json.put("due", dateFormat.format(due.getTime()));
+            }
+            if (isAllDay) {
+                json.put("endTime", endTime);
+                json.put("startTime", startTime);
+            }
+            if (json.length() > 0) {
+                s.append("\n\n");
+                s.append(EXTRA_DATA_SEPERATOR);
+                s.append(EXTRA_DATA_MAGIC_STRING);
+                s.append(json.toString());
+                s.append(EXTRA_DATA_MAGIC_STRING);
+            }
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static class ExtraDataParser {
+        private final static Pattern CONTEXT_PATTERN = Pattern.compile("(.*)" + "\n*" + EXTRA_DATA_SEPERATOR
+                + EXTRA_DATA_MAGIC_STRING + "(.*)" + EXTRA_DATA_MAGIC_STRING);
+        private static final ExtraDataParser INSTANCE = new ExtraDataParser();
+
+        public static ExtraDataParser getInstance() {
+            return INSTANCE;
+        }
+
+        public void parse(String inputText, Task task) {
+            Matcher m = CONTEXT_PATTERN.matcher(inputText);
+            if (!m.find()) {
+                task.description = inputText;
+                return;
+            }
+            task.description = m.group(1);
+            try {
+                JSONObject jsonObject = new JSONObject(m.group(2));
+                if (jsonObject.has("due")) {
+                    String due = jsonObject.getString("due");
+                    try {
+                        Date date = dateFormat.parse(due);
+                        if (date != null) {
+                            task.due = GregorianCalendar.getInstance();
+                            task.due.setTime(date);
+                        }
+                    } catch (ParseException e) {
+                        Log.w(LOG_TAG, "Invalid due date: " + due, e);
+                    }
+                }
+                if (task.isAllDay) {
+                    task.startTime = jsonObject.optLong("startTime", task.startTime);
+                    task.endTime = jsonObject.optLong("endTime", task.endTime);
+                }
+            } catch (JSONException e) {
+                Log.w(LOG_TAG, "Invalid JSON: " + m.group(2), e);
+            }
+        }
+
     }
 
 }
