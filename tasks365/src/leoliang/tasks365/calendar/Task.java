@@ -126,6 +126,21 @@ public class Task {
         }
     }
 
+    /**
+     * Schedule as an all day even in today.
+     */
+    public void scheduleToday() {
+        Calendar time = Calendar.getInstance();
+        time.set(Calendar.HOUR_OF_DAY, 0);
+        time.set(Calendar.MINUTE, 0);
+        time.set(Calendar.SECOND, 0);
+        time.set(Calendar.MILLISECOND, 0);
+        startTime = time.getTimeInMillis();
+        time.add(Calendar.DAY_OF_MONTH, 1);
+        endTime = time.getTimeInMillis();
+        isAllDay = true;
+    }
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();

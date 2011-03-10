@@ -1,9 +1,6 @@
 package leoliang.tasks365;
 
-import java.util.Calendar;
-
 import leoliang.tasks365.calendar.AndroidCalendar;
-import leoliang.tasks365.calendar.Task;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
@@ -14,6 +11,7 @@ import android.widget.EditText;
 public class NewTaskActivity extends Activity {
 
     private AndroidCalendar calendar;
+    private TaskManager taskManager;
     private EditText editText;
 
     // Read from preference
@@ -27,6 +25,7 @@ public class NewTaskActivity extends Activity {
         editText = (EditText) findViewById(R.id.text);
 
         calendar = new AndroidCalendar(this);
+        taskManager = new TaskManager(calendar);
 
         Button addButton = (Button) findViewById(R.id.addTaskButton);
         addButton.setOnClickListener(new OnClickListener() {
@@ -39,10 +38,8 @@ public class NewTaskActivity extends Activity {
     }
 
     private void addTask() {
-        Task task = new Task();
-        task.isNew = true;
-        task.calendarId = calendarId;
-
+        String title;
+        String description = null;
         String text = editText.getText().toString();
         if (text.length() == 0) {
             // TODO: notify user
@@ -50,22 +47,13 @@ public class NewTaskActivity extends Activity {
         }
         int firstLineBreakPosition = text.indexOf('\n');
         if (firstLineBreakPosition == -1) {
-            task.title = text;
+            title = text;
         } else {
-            task.title = text.substring(0, firstLineBreakPosition);
-            task.description = text.substring(firstLineBreakPosition);
+            title = text.substring(0, firstLineBreakPosition);
+            description = text.substring(firstLineBreakPosition);
         }
 
-        Calendar time = Calendar.getInstance();
-        time.set(Calendar.HOUR_OF_DAY, 0);
-        time.set(Calendar.MINUTE, 0);
-        time.set(Calendar.SECOND, 0);
-        time.set(Calendar.MILLISECOND, 0);
-        task.startTime = time.getTimeInMillis();
-        time.add(Calendar.DAY_OF_MONTH, 1);
-        task.endTime = time.getTimeInMillis();
-
-        calendar.createTask(task);
+        taskManager.createTask(calendarId, title, description);
     }
 
 }

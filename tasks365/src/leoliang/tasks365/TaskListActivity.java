@@ -34,8 +34,12 @@ public class TaskListActivity extends Activity {
         setContentView(R.layout.main);
 
         calendar = new AndroidCalendar(this);
+
+        // TODO: move it to somewhere more appropriate
+        TaskManager taskManager = new TaskManager(calendar);
+        taskManager.dealWithTasksInThePast(calendarId);
+
         cursor = calendar.queryTasksByDate(calendarId, Calendar.getInstance());
-        //        cursor = calendar.queryTasksInPassedDays(calendarId);
         startManagingCursor(cursor);
 
         ListAdapter adapter = new OneDayListAdapter(this, cursor);

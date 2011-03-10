@@ -153,7 +153,7 @@ public class AndroidCalendar {
      * @param calendarId
      * @return
      */
-    public Cursor queryTasksInPassedDays(long calendarId) {
+    public Cursor queryTasksInPastDays(long calendarId) {
         java.util.Calendar to = java.util.Calendar.getInstance();
         to.set(java.util.Calendar.HOUR_OF_DAY, 0);
         to.set(java.util.Calendar.MINUTE, 0);
