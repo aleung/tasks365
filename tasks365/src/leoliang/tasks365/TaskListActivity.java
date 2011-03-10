@@ -7,6 +7,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Config;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -25,14 +27,18 @@ public class TaskListActivity extends Activity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        if (Config.DEBUG) {
+            Log.v(LOG_TAG, "onCreate()");
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
         calendar = new AndroidCalendar(this);
         cursor = calendar.queryTasksByDate(calendarId, Calendar.getInstance());
+        //        cursor = calendar.queryTasksInPassedDays(calendarId);
         startManagingCursor(cursor);
 
-        ListAdapter adapter = new DayViewCursorAdapter(this, cursor);
+        ListAdapter adapter = new OneDayListAdapter(this, cursor);
         ListView listView = (ListView) findViewById(R.id.taskList);
         listView.setAdapter(adapter);
 

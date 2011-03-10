@@ -48,7 +48,9 @@ public class AndroidCalendar {
             Calendar.Events.ALL_DAY };
     private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
     private static final String TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
-            + Calendar.Events.DTEND + ">? AND " + Calendar.Events.DTSTART + "<?";
+            + Calendar.Events.DTEND + ">=? AND " + Calendar.Events.DTSTART + "<?";
+    private static final String PASSED_TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
+            + Calendar.Events.DTEND + "<=? AND " + Calendar.Events.DTSTART + "<?";
     private static final String[] CALENDAR_PROJECTION = { Calendar.Calendars._ID, Calendar.Calendars.DISPLAY_NAME,
             Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
 
@@ -66,6 +68,7 @@ public class AndroidCalendar {
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
         task.startTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTSTART));
         task.endTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTEND));
+        Log.v(LOG_TAG, "Read task. startTime=" + task.startTime + ", endTime=" + task.endTime);
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
@@ -117,6 +120,7 @@ public class AndroidCalendar {
      */
     public Cursor queryTasksByDate(long calendarId, java.util.Calendar date) {
         java.util.Calendar from = java.util.Calendar.getInstance();
+        from.clear();
         from.set(date.get(java.util.Calendar.YEAR), date.get(java.util.Calendar.MONTH),
                 date.get(java.util.Calendar.DAY_OF_MONTH), 0, 0, 0);
         java.util.Calendar to = (java.util.Calendar) from.clone();
@@ -137,6 +141,7 @@ public class AndroidCalendar {
         whereArgs[0] = String.valueOf(calendarId);
         whereArgs[1] = String.valueOf(from.getTime());
         whereArgs[2] = String.valueOf(to.getTime());
+        Log.v(LOG_TAG, "Query tasks from " + whereArgs[1] + " to " + whereArgs[2]);
         Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION, TASK_SELECTION_CRITERIA,
                 whereArgs, TASK_SORT_ORDER);
         return cursor;
@@ -149,14 +154,20 @@ public class AndroidCalendar {
      * @return
      */
     public Cursor queryTasksInPassedDays(long calendarId) {
-        java.util.Calendar from = java.util.Calendar.getInstance();
-        from.clear();
         java.util.Calendar to = java.util.Calendar.getInstance();
-        to.clear(java.util.Calendar.HOUR_OF_DAY);
-        to.clear(java.util.Calendar.MINUTE);
-        to.clear(java.util.Calendar.SECOND);
-        to.clear(java.util.Calendar.MILLISECOND);
-        return queryTasksByTimeRange(calendarId, from.getTime(), to.getTime());
+        to.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        to.set(java.util.Calendar.MINUTE, 0);
+        to.set(java.util.Calendar.SECOND, 0);
+        to.set(java.util.Calendar.MILLISECOND, 0);
+
+        String[] whereArgs = new String[3];
+        whereArgs[0] = String.valueOf(calendarId);
+        whereArgs[1] = String.valueOf(to.getTime());
+        whereArgs[2] = whereArgs[1];
+        Log.v(LOG_TAG, PASSED_TASK_SELECTION_CRITERIA + "; arg1=" + whereArgs[1] + " arg2=" + whereArgs[2]);
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
+                PASSED_TASK_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
+        return cursor;
     }
 
     /**
