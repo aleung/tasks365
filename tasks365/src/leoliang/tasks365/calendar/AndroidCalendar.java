@@ -41,16 +41,18 @@ import android.util.Log;
 
 public class AndroidCalendar {
 
-    private static final String LOG_TAG = "tasks365.AndroidCalendar";
+    private static final String LOG_TAG = "tasks365";
 
     private static final String[] TASK_PROJECTION = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
             Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND,
             Calendar.Events.ALL_DAY };
     private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
+    
     private static final String TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
             + Calendar.Events.DTEND + ">=? AND " + Calendar.Events.DTSTART + "<?";
     private static final String PASSED_TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
             + Calendar.Events.DTEND + "<=? AND " + Calendar.Events.DTSTART + "<?";
+
     private static final String[] CALENDAR_PROJECTION = { Calendar.Calendars._ID, Calendar.Calendars.DISPLAY_NAME,
             Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
 
@@ -68,7 +70,7 @@ public class AndroidCalendar {
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
         task.startTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTSTART));
         task.endTime = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTEND));
-        Log.v(LOG_TAG, "Read task. startTime=" + task.startTime + ", endTime=" + task.endTime);
+        Log.v(LOG_TAG, "Read task. dtStart=" + task.startTime + ", dtEnd=" + task.endTime);
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
@@ -92,6 +94,7 @@ public class AndroidCalendar {
         values.put(Calendar.Events.DTSTART, task.startTime);
         values.put(Calendar.Events.DTEND, task.endTime);
         values.put(Calendar.Events.ALL_DAY, task.isAllDay ? 1 : 0);
+        Log.d(LOG_TAG, "Create task: " + task);
         Uri uri = context.getContentResolver().insert(Calendar.Events.CONTENT_URI, values);
         if (uri == null) {
             // TODO: throw new CalendarException();
@@ -101,6 +104,7 @@ public class AndroidCalendar {
 
     public void deleteTask(long taskId) {
         Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, taskId);
+        Log.d(LOG_TAG, "Delete task: " + taskId);
         context.getContentResolver().delete(uri, null, null);
     }
 
@@ -181,6 +185,7 @@ public class AndroidCalendar {
         values.put(Calendar.Events.DTSTART, task.startTime);
         values.put(Calendar.Events.DTEND, task.endTime);
         values.put(Calendar.Events.ALL_DAY, task.isAllDay ? 1 : 0);
+        Log.d(LOG_TAG, "Update task: " + task);
         context.getContentResolver().update(uri, values, null, null);
     }
 

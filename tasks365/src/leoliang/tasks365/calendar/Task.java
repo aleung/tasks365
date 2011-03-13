@@ -1,10 +1,13 @@
 package leoliang.tasks365.calendar;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Formatter;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,12 +17,15 @@ import leoliang.tasks365.calendar.TagParser.TagParseResult;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
+
 /**
  * This class stores information of a task in calendar.
  */
 public class Task {
 
-    private static final String LOG_TAG = "tasks365.Task";
+    private static final String LOG_TAG = "tasks365";
+
     private static final String TAG_NEW = "new";
     private static final String TAG_STAR = "star";
     private static final String TAG_DONE = "done";
@@ -194,15 +200,39 @@ public class Task {
                 return;
             }
             task.description = m.group(1);
-            // TODO
-            /*try { JSONObject jsonObject = new JSONObject(m.group(2)); if (jsonObject.has("due")) { String due =
-             * jsonObject.getString("due"); try { Date date = dateFormat.parse(due); if (date != null) { task.due =
-             * GregorianCalendar.getInstance(); task.due.setTime(date); } } catch (ParseException e) { Log.w(LOG_TAG,
-             * "Invalid due date: " + due, e); } } if (task.isAllDay) { task.startTime = jsonObject.optLong("startTime",
-             * task.startTime); task.endTime = jsonObject.optLong("endTime", task.endTime); } } catch (JSONException e)
-             * { Log.w(LOG_TAG, "Invalid JSON: " + m.group(2), e); } */
+            try {
+                JSONObject jsonObject = new JSONObject(m.group(2));
+                if (jsonObject.has("due")) {
+                    String due = jsonObject.getString("due");
+                    try {
+                        Date date = dateFormat.parse(due);
+                        if (date != null) {
+                            task.due = GregorianCalendar.getInstance();
+                            task.due.setTime(date);
+                        }
+                    } catch (ParseException e) {
+                        Log.w(LOG_TAG, "Invalid due date: " + due, e);
+                    }
+                }
+                if (task.isAllDay) {
+                    task.startTime = jsonObject.optLong("startTime", task.startTime);
+                    task.endTime = jsonObject.optLong("endTime", task.endTime);
+                }
+            } catch (JSONException e) {
+                Log.w(LOG_TAG, "Invalid JSON: " + m.group(2), e);
+            }
         }
 
+    }
+
+    public boolean isScheduledToday() {
+        if (isAllDay) {
+
+        } else {
+
+        }
+        // TODO Auto-generated method stub
+        return false;
     }
 
 }

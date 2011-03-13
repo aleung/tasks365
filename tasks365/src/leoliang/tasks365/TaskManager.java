@@ -3,8 +3,11 @@ package leoliang.tasks365;
 import leoliang.tasks365.calendar.AndroidCalendar;
 import leoliang.tasks365.calendar.Task;
 import android.database.Cursor;
+import android.util.Log;
 
 public class TaskManager {
+
+    private static final String LOG_TAG = "tasks365";
 
     private AndroidCalendar calendar;
 
@@ -39,6 +42,7 @@ public class TaskManager {
      * @param task
      */
     private void archiveTask(Task task) {
+        Log.v(LOG_TAG, "Archive task: " + task);
         calendar.deleteTask(task.id);
     }
 

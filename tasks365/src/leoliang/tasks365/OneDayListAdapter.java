@@ -24,7 +24,7 @@ import android.widget.TextView;
 
 public class OneDayListAdapter extends BaseAdapter {
 
-    private static final String LOG_TAG = "tasks365.OneDayListAdapter";
+    private static final String LOG_TAG = "tasks365";
     private static final int VIEW_TYPE_OPEN_TASK = 0;
     private static final int VIEW_TYPE_FINISHED_TASK = 1;
 
@@ -66,7 +66,6 @@ public class OneDayListAdapter extends BaseAdapter {
 
     @Override
     public int getItemViewType(int position) {
-        Log.v(LOG_TAG, "getItemViewType, position=" + position);
         Task task = getItem(position);
         return task.isDone ? VIEW_TYPE_FINISHED_TASK : VIEW_TYPE_OPEN_TASK;
     }
@@ -152,7 +151,11 @@ public class OneDayListAdapter extends BaseAdapter {
             return;
         }
         do {
-            tasks.add(AndroidCalendar.readTask(cursor));
+            Task task = AndroidCalendar.readTask(cursor);
+            // TODO
+            //if (task.isScheduledToday()) {
+                tasks.add(task);
+            //}
         } while (cursor.moveToNext());
         Collections.sort(tasks, new TaskComparator());
         Log.v(LOG_TAG, "Loaded " + tasks.size() + " tasks.");
@@ -166,9 +169,9 @@ public class OneDayListAdapter extends BaseAdapter {
      */
     protected void onContentChanged() {
         if (!cursor.isClosed()) {
-            Log.v(LOG_TAG, "Auto requerying due to update");
+            Log.v(LOG_TAG, "Auto requerying due to content is changed");
+            // TODO: set a flag, delay 10 seconds before requery
             cursor.requery();
-            loadTasks();
         }
     }
 
@@ -187,12 +190,8 @@ public class OneDayListAdapter extends BaseAdapter {
         }
 
         @Override
-        public boolean deliverSelfNotifications() {
-            return true;
-        }
-
-        @Override
         public void onChange(boolean selfChange) {
+            Log.v(LOG_TAG, "Content changed. Is self change:" + selfChange);
             onContentChanged();
         }
     }
@@ -201,6 +200,7 @@ public class OneDayListAdapter extends BaseAdapter {
         @Override
         public void onChanged() {
             Log.v(LOG_TAG, "Data set is changed");
+            loadTasks();
             notifyDataSetChanged();
         }
 
