@@ -2,9 +2,9 @@ package leoliang.tasks365;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 import leoliang.tasks365.calendar.AndroidCalendar;
@@ -114,9 +114,9 @@ public class OneDayListAdapter extends BaseAdapter {
         // TODO: tags, daysToDue
     }
 
-    private String formatStartAndEndTime(long startTime, long endTime) {
+    private String formatStartAndEndTime(Calendar startTime, Calendar endTime) {
         DateFormat formatter = DateFormat.getTimeInstance();
-        return formatter.format(new Date(startTime)) + " - " + formatter.format(new Date(endTime));
+        return formatter.format(startTime.getTime()) + " - " + formatter.format(endTime.getTime());
     }
 
     private View newView(Task task) {
@@ -232,13 +232,7 @@ public class OneDayListAdapter extends BaseAdapter {
                 return -1;
             }
 
-            if (task1.startTime < task2.startTime) {
-                return -1;
-            }
-            if (task1.startTime > task2.startTime) {
-                return 1;
-            }
-            return 0;
+            return task1.startTime.compareTo(task2.startTime);
         }
 
     }

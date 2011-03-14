@@ -32,13 +32,14 @@ public class Task {
     private static final String EXTRA_DATA_MAGIC_STRING = "-#%#-";
     private static final String EXTRA_DATA_SEPERATOR = "--- DO NOT MODIFY BELOW ---\n";
 
-    private static final DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+    private static final DateFormat dueFormatter = new SimpleDateFormat("yyyyMMdd");
+    private static final DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
 
     // fields directly maps to content provider data model
     public long id;
     public long calendarId;
-    public long startTime;
-    public long endTime;
+    public Calendar startTime = Calendar.getInstance();
+    public Calendar endTime = Calendar.getInstance();
     public boolean isAllDay = true;
 
     /** pure title, without tags */
@@ -54,6 +55,14 @@ public class Task {
 
     // extra fields stored in JSON
     public Calendar due = null;
+
+    public static String formatDate(Date date) {
+        return dateFormatter.format(date);
+    }
+
+    public static String formatDate(java.util.Calendar date) {
+        return formatDate(date.getTime());
+    }
 
     public String getDescriptionWithExtraData() {
         StringBuilder s = new StringBuilder();
@@ -136,14 +145,12 @@ public class Task {
      * Schedule as an all day even in today.
      */
     public void scheduleToday() {
-        Calendar time = Calendar.getInstance();
-        time.set(Calendar.HOUR_OF_DAY, 0);
-        time.set(Calendar.MINUTE, 0);
-        time.set(Calendar.SECOND, 0);
-        time.set(Calendar.MILLISECOND, 0);
-        startTime = time.getTimeInMillis();
-        time.add(Calendar.DAY_OF_MONTH, 1);
-        endTime = time.getTimeInMillis();
+        startTime = Calendar.getInstance();
+        startTime.set(Calendar.HOUR_OF_DAY, 23);
+        startTime.set(Calendar.MINUTE, 59);
+        startTime.set(Calendar.SECOND, 0);
+        startTime.set(Calendar.MILLISECOND, 0);
+        endTime = (Calendar) startTime.clone();
         isAllDay = true;
     }
 
@@ -151,8 +158,8 @@ public class Task {
     public String toString() {
         StringBuilder s = new StringBuilder();
         Formatter formatter = new Formatter(s);
-        formatter.format("{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%d, endTime:%d}", id, calendarId,
-                title, isAllDay, startTime, endTime);
+        formatter.format("{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%s, endTime:%s}", id, calendarId,
+                title, isAllDay, formatDate(startTime), formatDate(endTime));
         return s.toString();
     }
 
@@ -166,11 +173,13 @@ public class Task {
         try {
             JSONObject json = new JSONObject();
             if (due != null) {
-                json.put("due", dateFormat.format(due.getTime()));
+                json.put("due", dueFormatter.format(due.getTime()));
             }
             if (isAllDay) {
-                json.put("endTime", endTime);
-                json.put("startTime", startTime);
+                json.put(
+                        "scheduledTime",
+                        new JSONObject().put("minute", startTime.get(Calendar.MINUTE)).put("hour",
+                                startTime.get(Calendar.HOUR_OF_DAY)));
             }
             if (json.length() > 0) {
                 s.append("\n\n");
@@ -205,7 +214,7 @@ public class Task {
                 if (jsonObject.has("due")) {
                     String due = jsonObject.getString("due");
                     try {
-                        Date date = dateFormat.parse(due);
+                        Date date = dueFormatter.parse(due);
                         if (date != null) {
                             task.due = GregorianCalendar.getInstance();
                             task.due.setTime(date);
@@ -215,8 +224,14 @@ public class Task {
                     }
                 }
                 if (task.isAllDay) {
-                    task.startTime = jsonObject.optLong("startTime", task.startTime);
-                    task.endTime = jsonObject.optLong("endTime", task.endTime);
+                    JSONObject scheduledTimeJson = jsonObject.optJSONObject("scheduledTime");
+                    if (scheduledTimeJson != null) {
+                        task.startTime.set(Calendar.HOUR_OF_DAY, scheduledTimeJson.optInt("hour", 23));
+                        task.startTime.set(Calendar.MINUTE, scheduledTimeJson.optInt("minute", 59));
+                        task.startTime.set(Calendar.SECOND, 0);
+                        task.startTime.set(Calendar.MILLISECOND, 0);
+                        task.endTime = (Calendar) task.startTime.clone();
+                    }
                 }
             } catch (JSONException e) {
                 Log.w(LOG_TAG, "Invalid JSON: " + m.group(2), e);
