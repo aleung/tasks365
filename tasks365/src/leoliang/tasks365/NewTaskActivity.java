@@ -1,6 +1,5 @@
 package leoliang.tasks365;
 
-import leoliang.tasks365.task.AndroidCalendar;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
@@ -10,12 +9,11 @@ import android.widget.EditText;
 
 public class NewTaskActivity extends Activity {
 
-    private AndroidCalendar calendar;
     private TaskManager taskManager;
     private EditText editText;
 
     // Read from preference
-    private int calendarId = 14;
+    private long calendarId = 14;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -24,8 +22,7 @@ public class NewTaskActivity extends Activity {
 
         editText = (EditText) findViewById(R.id.text);
 
-        calendar = new AndroidCalendar(this);
-        taskManager = new TaskManager(calendar);
+        taskManager = new TaskManager(this, calendarId);
 
         Button addButton = (Button) findViewById(R.id.addTaskButton);
         addButton.setOnClickListener(new OnClickListener() {
@@ -53,7 +50,7 @@ public class NewTaskActivity extends Activity {
             description = text.substring(firstLineBreakPosition);
         }
 
-        taskManager.createTask(calendarId, title, description);
+        taskManager.createTask(title, description);
     }
 
 }

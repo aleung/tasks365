@@ -2,6 +2,7 @@ package leoliang.tasks365;
 
 import leoliang.tasks365.task.AndroidCalendar;
 import leoliang.tasks365.task.Task;
+import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
 
@@ -10,13 +11,24 @@ public class TaskManager {
     private static final String LOG_TAG = "tasks365";
 
     private AndroidCalendar calendar;
+    private long calendarId;
 
-    public TaskManager(AndroidCalendar calendar) {
-        this.calendar = calendar;
+    public TaskManager(Context context, long calendarId) {
+        calendar = new AndroidCalendar(context);
+        this.calendarId = calendarId;
     }
 
-    public void dealWithTasksInThePast(int calendarId) {
-        Cursor cursor = calendar.queryTasksInPastDays(calendarId);
+    public void dealWithTasksInThePast() {
+        Cursor cursor = calendar.queryAllDayEventsInPastDays(calendarId);
+        dealWithTasksInThePast(cursor);
+        cursor.close();
+
+        cursor = calendar.queryNonAllDayEventsInPastDays(calendarId);
+        dealWithTasksInThePast(cursor);
+        cursor.close();
+    }
+
+    private void dealWithTasksInThePast(Cursor cursor) {
         if (!cursor.moveToFirst()) {
             return;
         }
@@ -28,7 +40,6 @@ public class TaskManager {
                 moveTaskToToday(task);
             }
         } while (cursor.moveToNext());
-
     }
 
     private void moveTaskToToday(Task task) {
@@ -46,7 +57,7 @@ public class TaskManager {
         calendar.deleteTask(task.id);
     }
 
-    public void createTask(int calendarId, String title, String description) {
+    public void createTask(String title, String description) {
         Task task = new Task();
         task.isNew = true;
         task.calendarId = calendarId;

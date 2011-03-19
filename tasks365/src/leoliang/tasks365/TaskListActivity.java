@@ -20,7 +20,7 @@ public class TaskListActivity extends Activity {
     private SingleDayTaskQuery query;
 
     // Read from preference
-    private int calendarId = 14;
+    private long calendarId = 14;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -31,8 +31,8 @@ public class TaskListActivity extends Activity {
         setContentView(R.layout.main);
 
         // TODO: move it to somewhere more appropriate
-        //        TaskManager taskManager = new TaskManager(calendar);
-        //        taskManager.dealWithTasksInThePast(calendarId);
+        TaskManager taskManager = new TaskManager(this, calendarId);
+        taskManager.dealWithTasksInThePast();
 
 
         Button addButton = (Button) findViewById(R.id.addTaskButton);

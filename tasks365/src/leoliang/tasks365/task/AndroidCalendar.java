@@ -51,14 +51,13 @@ public class AndroidCalendar {
     private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
 
     private static final String NON_ALL_DAY_EVENT_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
-            + Calendar.Events.DTEND + ">=? AND " + Calendar.Events.DTSTART + "<? AND " + Calendar.Events.ALL_DAY
-            + "=0";
+            + Calendar.Events.DTEND + ">=? AND " + Calendar.Events.DTSTART + "<? AND " + Calendar.Events.ALL_DAY + "=0";
 
     private static final String ALL_DAY_EVENT_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
             + Calendar.Events.DTSTART + "=? AND " + Calendar.Events.ALL_DAY + "=1";
 
-    private static final String PASSED_TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
-            + Calendar.Events.DTEND + "<=? AND " + Calendar.Events.DTSTART + "<?";
+    private static final String PASSED_EVENT_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
+            + Calendar.Events.DTEND + "<=? AND " + Calendar.Events.DTSTART + "<? AND " + Calendar.Events.ALL_DAY + "=?";
 
     private static final String[] CALENDAR_PROJECTION = { Calendar.Calendars._ID, Calendar.Calendars.DISPLAY_NAME,
             Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
@@ -203,27 +202,46 @@ public class AndroidCalendar {
     }
 
     /**
-     * Query tasks which were scheduled in passed days (before 0:00 of today in system's time zone).
+     * Query non all day events which were scheduled in passed days (before 0:00 of today in system's time zone).
      * 
      * @param calendarId
      * @return
      */
-    public Cursor queryTasksInPastDays(long calendarId) {
-        java.util.Calendar to = java.util.Calendar.getInstance();
-        to.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        to.set(java.util.Calendar.MINUTE, 0);
-        to.set(java.util.Calendar.SECOND, 0);
-        to.set(java.util.Calendar.MILLISECOND, 0);
+    public Cursor queryNonAllDayEventsInPastDays(long calendarId) {
+        return queryEventsInPastDays(calendarId, false);
+    }
 
-        String[] whereArgs = new String[3];
+    /**
+     * Query all day events which were scheduled in passed days.
+     * 
+     * @param calendarId
+     * @return
+     */
+    public Cursor queryAllDayEventsInPastDays(long calendarId) {
+        return queryEventsInPastDays(calendarId, true);
+    }
+
+    private Cursor queryEventsInPastDays(long calendarId, boolean isAllDay) {
+        java.util.Calendar beforeDate = java.util.Calendar.getInstance();
+        if (isAllDay) {
+            beforeDate.setTimeZone(TimeZone.getTimeZone("UMT"));
+        }
+        beforeDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        beforeDate.set(java.util.Calendar.MINUTE, 0);
+        beforeDate.set(java.util.Calendar.SECOND, 0);
+        beforeDate.set(java.util.Calendar.MILLISECOND, 0);
+
+        String[] whereArgs = new String[4];
         whereArgs[0] = String.valueOf(calendarId);
-        whereArgs[1] = String.valueOf(to.getTime());
+        whereArgs[1] = String.valueOf(beforeDate.getTimeInMillis());
         whereArgs[2] = whereArgs[1];
+        whereArgs[3] = isAllDay ? "1" : "0";
+
         Log.v(LOG_TAG,
-                "Query passed tasks: " + PASSED_TASK_SELECTION_CRITERIA + "; arg=" + whereArgs[1] + " ("
-                        + Task.formatDate(to.getTime()) + ")");
+                "Query " + (isAllDay ? "all day" : "non all day") + " events before "
+                        + Task.formatDate(beforeDate.getTime()));
         Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
-                PASSED_TASK_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
+                PASSED_EVENT_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
         return cursor;
     }
 
