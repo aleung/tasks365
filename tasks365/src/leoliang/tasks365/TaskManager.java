@@ -18,6 +18,16 @@ public class TaskManager {
         this.calendarId = calendarId;
     }
 
+    public void markTaskDone(Task task) {
+        task.isDone = true;
+        calendar.updateTask(task);
+    }
+
+    public void markTaskUndone(Task task) {
+        task.isDone = false;
+        calendar.updateTask(task);
+    }
+
     public void dealWithTasksInThePast() {
         Cursor cursor = calendar.queryAllDayEventsInPastDays(calendarId);
         dealWithTasksInThePast(cursor);
@@ -66,6 +76,5 @@ public class TaskManager {
         task.scheduleToday();
         calendar.createTask(task);
     }
-
 
 }

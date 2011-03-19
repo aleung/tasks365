@@ -3,13 +3,19 @@ package leoliang.tasks365;
 import java.util.Calendar;
 
 import leoliang.tasks365.task.SingleDayTaskQuery;
+import leoliang.tasks365.task.Task;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Config;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Button;
 import android.widget.ListView;
 
@@ -17,7 +23,13 @@ public class TaskListActivity extends Activity {
 
     private static final String LOG_TAG = "tasks365";
 
+    // context menu
+    private static final int MENU_MARK_TASK_DONE = 1;
+    private static final int MENU_MARK_TASK_UNDONE = 2;
+
     private SingleDayTaskQuery query;
+    private TaskManager taskManager;
+    private TaskListAdapter adapter;
 
     // Read from preference
     private long calendarId = 14;
@@ -31,7 +43,7 @@ public class TaskListActivity extends Activity {
         setContentView(R.layout.main);
 
         // TODO: move it to somewhere more appropriate
-        TaskManager taskManager = new TaskManager(this, calendarId);
+        taskManager = new TaskManager(this, calendarId);
         taskManager.dealWithTasksInThePast();
 
 
@@ -45,13 +57,45 @@ public class TaskListActivity extends Activity {
 
         });
 
-        TaskListAdapter adapter = new TaskListAdapter(this);
+        adapter = new TaskListAdapter(this);
 
         query = new SingleDayTaskQuery(this, calendarId, adapter);
         query.query(Calendar.getInstance());
 
         ListView listView = (ListView) findViewById(R.id.taskList);
         listView.setAdapter(adapter);
+        registerForContextMenu(listView);
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View view, ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, view, menuInfo);
+        if (view.getId() == R.id.taskList) {
+            AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
+            Task task = adapter.getItem(info.position);
+            menu.setHeaderTitle(task.title);
+            if (task.isDone) {
+                menu.add(Menu.NONE, MENU_MARK_TASK_UNDONE, Menu.NONE, R.string.mark_task_undone);
+            } else {
+                menu.add(Menu.NONE, MENU_MARK_TASK_DONE, Menu.NONE, R.string.mark_task_done);
+            }
+        }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+        Task task = adapter.getItem(info.position);
+        switch (item.getItemId()) {
+        case MENU_MARK_TASK_DONE:
+            taskManager.markTaskDone(task);
+            return true;
+        case MENU_MARK_TASK_UNDONE:
+            taskManager.markTaskUndone(task);
+            return true;
+        default:
+            return super.onContextItemSelected(item);
+        }
     }
 
 }

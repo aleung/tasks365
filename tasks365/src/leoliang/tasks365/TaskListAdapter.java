@@ -17,6 +17,8 @@ import android.widget.TextView;
 public class TaskListAdapter extends BaseAdapter implements QueryResultObserver {
 
     private static final String LOG_TAG = "tasks365";
+
+    // view type
     private static final int VIEW_TYPE_OPEN_TASK = 0;
     private static final int VIEW_TYPE_FINISHED_TASK = 1;
 
@@ -89,7 +91,7 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
         viewHolder.title.setPaintFlags(viewHolder.title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
     }
 
-    private void bindViewForOpenTask(View view, Task task) {
+    private void bindViewForOpenTask(View view, final Task task) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
         viewHolder.title.setText(task.title);
         String tags = "";
@@ -100,6 +102,7 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
             tags += " [NEW]";
         }
         viewHolder.tags.setText(tags);
+
         // TODO: tags, daysToDue
     }
 
