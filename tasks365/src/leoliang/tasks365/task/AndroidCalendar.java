@@ -28,11 +28,11 @@
  * 
  * <ORGANIZATION> = Mamlambo
  */
-package leoliang.tasks365.calendar;
+package leoliang.tasks365.task;
 
-import java.util.Date;
 import java.util.TimeZone;
 
+import leoliang.tasks365.calendar.Calendar;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -47,10 +47,16 @@ public class AndroidCalendar {
     private static final String[] TASK_PROJECTION = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
             Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND,
             Calendar.Events.ALL_DAY };
+
     private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
-    
-    private static final String TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
-            + Calendar.Events.DTEND + ">=? AND " + Calendar.Events.DTSTART + "<?";
+
+    private static final String NON_ALL_DAY_EVENT_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
+            + Calendar.Events.DTEND + ">=? AND " + Calendar.Events.DTSTART + "<? AND " + Calendar.Events.ALL_DAY
+            + "=0";
+
+    private static final String ALL_DAY_EVENT_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
+            + Calendar.Events.DTSTART + "=? AND " + Calendar.Events.ALL_DAY + "=1";
+
     private static final String PASSED_TASK_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
             + Calendar.Events.DTEND + "<=? AND " + Calendar.Events.DTSTART + "<?";
 
@@ -58,6 +64,13 @@ public class AndroidCalendar {
             Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
 
     private Context context;
+
+    public AndroidCalendar(Context context) {
+        this.context = context;
+        // TODO: compatible to different calendar provider URI
+        // calendarUriBase = getCalendarUriBase();
+        // if (calendarUriBase == null) { throw new Exception(); }
+    }
 
     /**
      * Read the task at cursor current location.
@@ -79,13 +92,6 @@ public class AndroidCalendar {
         task.setDescriptionWithExtraData(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
         Log.v(LOG_TAG, "Read task. " + task);
         return task;
-    }
-
-    public AndroidCalendar(Context context) {
-        this.context = context;
-        // TODO: compatible to different calendar provider URI
-        // calendarUriBase = getCalendarUriBase();
-        // if (calendarUriBase == null) { throw new Exception(); }
     }
 
     public void createTask(Task task) {
@@ -146,38 +152,53 @@ public class AndroidCalendar {
     }
 
     /**
-     * Query tasks which are scheduled in one day (0:00 ~ 24:00 in system's time zone).
+     * Query non all day events which are scheduled in one day (0:00 ~ 24:00 in time zone that specific in parameter
+     * date).
      * 
      * @param calendarId
-     * @param date
-     * @return
+     * @param date - hour/minute/seconds are ignored, time zone is used
+     * @return events scheduled in specified date
      */
-    public Cursor queryTasksByDate(long calendarId, java.util.Calendar date) {
+    public Cursor queryNonAllDayEventsByDate(long calendarId, java.util.Calendar date) {
         java.util.Calendar from = java.util.Calendar.getInstance();
         from.clear();
         from.set(date.get(java.util.Calendar.YEAR), date.get(java.util.Calendar.MONTH),
                 date.get(java.util.Calendar.DAY_OF_MONTH), 0, 0, 0);
         java.util.Calendar to = (java.util.Calendar) from.clone();
         to.add(java.util.Calendar.DAY_OF_MONTH, 1);
-        return queryTasksByTimeRange(calendarId, from.getTime(), to.getTime());
+
+        String[] whereArgs = new String[3];
+        whereArgs[0] = String.valueOf(calendarId);
+        whereArgs[1] = String.valueOf(from.getTimeInMillis());
+        whereArgs[2] = String.valueOf(to.getTimeInMillis());
+        Log.v(LOG_TAG, "Query non all day events in [" + Task.formatDate(from) + ", " + Task.formatDate(to) + ")");
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
+                NON_ALL_DAY_EVENT_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
+        return cursor;
     }
 
     /**
-     * Query tasks which are scheduled in a range of time.
+     * Query all day events
      * 
      * @param calendarId
-     * @param from
-     * @param to
-     * @return
+     * @param date - in local time zone, hour/minute/seconds are ignored
+     * @return events scheduled in specified date
      */
-    public Cursor queryTasksByTimeRange(long calendarId, Date from, Date to) {
-        String[] whereArgs = new String[3];
+    public Cursor queryAllDayEventsByDate(long calendarId, java.util.Calendar date) {
+        java.util.Calendar umtDate = (java.util.Calendar) date.clone();
+        umtDate.setTimeZone(TimeZone.getTimeZone("UMT"));
+        umtDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        umtDate.set(java.util.Calendar.MINUTE, 0);
+        umtDate.set(java.util.Calendar.SECOND, 0);
+        umtDate.set(java.util.Calendar.MILLISECOND, 0);
+
+        String[] whereArgs = new String[2];
         whereArgs[0] = String.valueOf(calendarId);
-        whereArgs[1] = String.valueOf(from.getTime());
-        whereArgs[2] = String.valueOf(to.getTime());
-        Log.v(LOG_TAG, "Query tasks from " + Task.formatDate(from) + " to " + Task.formatDate(to));
-        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION, TASK_SELECTION_CRITERIA,
-                whereArgs, TASK_SORT_ORDER);
+        whereArgs[1] = String.valueOf(umtDate.getTimeInMillis());
+
+        Log.v(LOG_TAG, "Query all day events at " + Task.formatDate(umtDate));
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
+                ALL_DAY_EVENT_SELECTION_CRITERIA, whereArgs, null);
         return cursor;
     }
 
@@ -198,7 +219,8 @@ public class AndroidCalendar {
         whereArgs[0] = String.valueOf(calendarId);
         whereArgs[1] = String.valueOf(to.getTime());
         whereArgs[2] = whereArgs[1];
-        Log.v(LOG_TAG, "Query passed tasks: " + PASSED_TASK_SELECTION_CRITERIA + "; arg=" + whereArgs[1] + " ("
+        Log.v(LOG_TAG,
+                "Query passed tasks: " + PASSED_TASK_SELECTION_CRITERIA + "; arg=" + whereArgs[1] + " ("
                         + Task.formatDate(to.getTime()) + ")");
         Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
                 PASSED_TASK_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);

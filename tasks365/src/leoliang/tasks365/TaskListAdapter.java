@@ -1,56 +1,42 @@
 package leoliang.tasks365;
 
 import java.text.DateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-import leoliang.tasks365.calendar.AndroidCalendar;
-import leoliang.tasks365.calendar.Task;
+import leoliang.tasks365.task.QueryResultObserver;
+import leoliang.tasks365.task.Task;
 import android.content.Context;
-import android.database.ContentObserver;
-import android.database.Cursor;
-import android.database.DataSetObserver;
 import android.graphics.Paint;
-import android.os.Handler;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-public class OneDayListAdapter extends BaseAdapter {
+public class TaskListAdapter extends BaseAdapter implements QueryResultObserver {
 
     private static final String LOG_TAG = "tasks365";
     private static final int VIEW_TYPE_OPEN_TASK = 0;
     private static final int VIEW_TYPE_FINISHED_TASK = 1;
 
-    private List<Task> tasks = new ArrayList<Task>();
+    private List<Task> tasks;
     private LayoutInflater inflater;
-    private Cursor cursor;
-    private ChangeObserver changeObserver;
-    private DataSetObserver dataSetObserver = new MyDataSetObserver();
 
     /**
      * Creates a new instance of <code>OneDayListAdapter</code>.
      * 
      * @param context
-     * @param cursor
      */
-    public OneDayListAdapter(Context context, Cursor cursor) {
-        this.cursor = cursor;
+    public TaskListAdapter(Context context) {
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        loadTasks();
-        changeObserver = new ChangeObserver();
-        cursor.registerContentObserver(changeObserver);
-        cursor.registerDataSetObserver(dataSetObserver);
     }
 
     @Override
     public int getCount() {
+        if (tasks == null) {
+            return 0;
+        }
         return tasks.size();
     }
 
@@ -106,7 +92,10 @@ public class OneDayListAdapter extends BaseAdapter {
     private void bindViewForOpenTask(View view, Task task) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
         viewHolder.title.setText(task.title);
-        String tags = formatStartAndEndTime(task.startTime, task.endTime);
+        String tags = "";
+        if (!task.isAllDay) {
+            tags += formatStartAndEndTime(task.startTime, task.endTime);
+        }
         if (task.isNew) {
             tags += " [NEW]";
         }
@@ -145,35 +134,17 @@ public class OneDayListAdapter extends BaseAdapter {
         return view;
     }
 
-    private void loadTasks() {
-        tasks.clear();
-        if (!cursor.moveToFirst()) {
-            return;
-        }
-        do {
-            Task task = AndroidCalendar.readTask(cursor);
-            // TODO
-            //if (task.isScheduledToday()) {
-                tasks.add(task);
-            //}
-        } while (cursor.moveToNext());
-        Collections.sort(tasks, new TaskComparator());
-        Log.v(LOG_TAG, "Loaded " + tasks.size() + " tasks.");
+    @Override
+    public void onResultChanged(List<Task> result) {
+        tasks = result;
+        notifyDataSetChanged();
     }
 
-    /**
-     * Called when the {@link ContentObserver} on the cursor receives a change notification. The default implementation
-     * provides the auto-requery logic, but may be overridden by sub classes.
-     * 
-     * @see ContentObserver#onChange(boolean)
-     */
-    protected void onContentChanged() {
-        if (!cursor.isClosed()) {
-            Log.v(LOG_TAG, "Auto requerying due to content is changed");
-            // TODO: set a flag, delay 10 seconds before requery
-            cursor.requery();
-        }
+    @Override
+    public void onInvalidated() {
+        notifyDataSetInvalidated();
     }
+
 
     /**
      * Cache the sub views inside a list item view.
@@ -184,56 +155,4 @@ public class OneDayListAdapter extends BaseAdapter {
         public TextView daysToDue;
     }
 
-    private class ChangeObserver extends ContentObserver {
-        public ChangeObserver() {
-            super(new Handler());
-        }
-
-        @Override
-        public void onChange(boolean selfChange) {
-            Log.v(LOG_TAG, "Content changed. Is self change:" + selfChange);
-            onContentChanged();
-        }
-    }
-
-    private class MyDataSetObserver extends DataSetObserver {
-        @Override
-        public void onChanged() {
-            Log.v(LOG_TAG, "Data set is changed");
-            loadTasks();
-            notifyDataSetChanged();
-        }
-
-        @Override
-        public void onInvalidated() {
-            Log.v(LOG_TAG, "Data set is invalidated");
-            notifyDataSetInvalidated();
-        }
-    }
-
-    /**
-     * Sort tasks by status and startTime. Tasks of different status order in: normal, new, done.
-     */
-    private class TaskComparator implements Comparator<Task> {
-
-        @Override
-        public int compare(Task task1, Task task2) {
-            if (task1.isDone != task2.isDone) {
-                if (task1.isDone) {
-                    return 1;
-                }
-                return -1;
-            }
-
-            if (task1.isNew != task2.isNew) {
-                if (task1.isNew) {
-                    return 1;
-                }
-                return -1;
-            }
-
-            return task1.startTime.compareTo(task2.startTime);
-        }
-
-    }
 }

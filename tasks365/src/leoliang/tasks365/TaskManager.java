@@ -1,7 +1,7 @@
 package leoliang.tasks365;
 
-import leoliang.tasks365.calendar.AndroidCalendar;
-import leoliang.tasks365.calendar.Task;
+import leoliang.tasks365.task.AndroidCalendar;
+import leoliang.tasks365.task.Task;
 import android.database.Cursor;
 import android.util.Log;
 

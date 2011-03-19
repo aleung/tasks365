@@ -1,4 +1,4 @@
-package leoliang.tasks365.calendar;
+package leoliang.tasks365.task;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import leoliang.tasks365.calendar.TagParser.TagParseResult;
+import leoliang.tasks365.task.TagParser.TagParseResult;
 
 import org.json.JSONException;
 import org.json.JSONObject;
