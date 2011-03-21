@@ -77,4 +77,8 @@ public class TaskManager {
         calendar.createTask(task);
     }
 
+    public void saveTask(Task task) {
+        calendar.updateTask(task);
+    }
+
 }

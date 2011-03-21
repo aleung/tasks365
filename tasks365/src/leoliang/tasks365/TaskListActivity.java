@@ -5,6 +5,8 @@ import java.util.Calendar;
 import leoliang.tasks365.task.SingleDayTaskQuery;
 import leoliang.tasks365.task.Task;
 import android.app.Activity;
+import android.app.DatePickerDialog;
+import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Config;
@@ -17,6 +19,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.ListView;
 
 public class TaskListActivity extends Activity {
@@ -26,6 +29,7 @@ public class TaskListActivity extends Activity {
     // context menu
     private static final int MENU_MARK_TASK_DONE = 1;
     private static final int MENU_MARK_TASK_UNDONE = 2;
+    private static final int MENU_SCHEDULE_TASK = 3;
 
     private SingleDayTaskQuery query;
     private TaskManager taskManager;
@@ -78,6 +82,7 @@ public class TaskListActivity extends Activity {
                 menu.add(Menu.NONE, MENU_MARK_TASK_UNDONE, Menu.NONE, R.string.mark_task_undone);
             } else {
                 menu.add(Menu.NONE, MENU_MARK_TASK_DONE, Menu.NONE, R.string.mark_task_done);
+                menu.add(Menu.NONE, MENU_SCHEDULE_TASK, Menu.NONE, R.string.schedule_task);
             }
         }
     }
@@ -93,9 +98,30 @@ public class TaskListActivity extends Activity {
         case MENU_MARK_TASK_UNDONE:
             taskManager.markTaskUndone(task);
             return true;
+        case MENU_SCHEDULE_TASK:
+            scheduleTask(task);
+            return true;
         default:
             return super.onContextItemSelected(item);
         }
+    }
+
+    private void scheduleTask(final Task task) {
+        new DatePickerDialog(this, new OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+                task.startTime.set(Calendar.YEAR, year);
+                task.startTime.set(Calendar.MONTH, monthOfYear);
+                task.startTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                Calendar now = Calendar.getInstance();
+                if (task.startTime.before(now)) {
+                    task.startTime = now;
+                }
+                task.isNew = false;
+                taskManager.saveTask(task);
+            }
+        }, task.startTime.get(Calendar.YEAR), task.startTime.get(Calendar.MONTH),
+                task.startTime.get(Calendar.DAY_OF_MONTH) + 1).show();
     }
 
 }
