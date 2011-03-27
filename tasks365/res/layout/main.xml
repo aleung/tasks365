@@ -4,13 +4,6 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
 
-    <Button android:id="@+id/addTaskButton" 
-        android:layout_width="fill_parent" 
-        android:layout_height="wrap_content"
-        android:layout_marginTop="5dip"
-        android:drawableLeft="@android:drawable/ic_menu_add"
-        android:text="@string/add_task" />
-
     <ListView android:id="@+id/taskList" 
         android:layout_width="wrap_content"
         android:layout_height="0dip"

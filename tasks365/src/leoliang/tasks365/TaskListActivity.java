@@ -1,10 +1,13 @@
 package leoliang.tasks365;
 
+import greendroid.app.GDActivity;
+import greendroid.widget.ActionBarItem;
+import greendroid.widget.ActionBarItem.Type;
+
 import java.util.Calendar;
 
 import leoliang.tasks365.task.SingleDayTaskQuery;
 import leoliang.tasks365.task.Task;
-import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Intent;
@@ -16,13 +19,11 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.ListView;
 
-public class TaskListActivity extends Activity {
+public class TaskListActivity extends GDActivity {
 
     private static final String LOG_TAG = "tasks365";
 
@@ -44,22 +45,13 @@ public class TaskListActivity extends Activity {
             Log.v(LOG_TAG, "onCreate()");
         }
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setActionBarContentView(R.layout.main);
+
+        addActionBarItem(Type.Add, R.id.action_bar_add);
 
         // TODO: move it to somewhere more appropriate
         taskManager = new TaskManager(this, calendarId);
         taskManager.dealWithTasksInThePast();
-
-
-        Button addButton = (Button) findViewById(R.id.addTaskButton);
-        addButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(@SuppressWarnings("unused") View view) {
-                Intent intent = new Intent(getApplicationContext(), NewTaskActivity.class);
-                startActivity(intent);
-            }
-
-        });
 
         adapter = new TaskListAdapter(this);
 
@@ -122,6 +114,17 @@ public class TaskListActivity extends Activity {
             }
         }, task.startTime.get(Calendar.YEAR), task.startTime.get(Calendar.MONTH),
                 task.startTime.get(Calendar.DAY_OF_MONTH) + 1).show();
+    }
+
+    @Override
+    public boolean onHandleActionBarItemClick(ActionBarItem item, int position) {
+        switch (item.getItemId()) {
+        case R.id.action_bar_add:
+            startActivity(new Intent(getApplicationContext(), NewTaskActivity.class));
+            return true;
+        default:
+            return super.onHandleActionBarItemClick(item, position);
+        }
     }
 
 }
