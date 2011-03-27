@@ -2,8 +2,11 @@
 <resources>
     <string name="app_name">tasks365</string>
     <string name="add_task">Add Task</string>
+    <string name="edit_task">Edit</string>
     <string name="mark_task_done">Done</string>
     <string name="mark_task_undone">Undone</string>
     <string name="schedule_task">Schedule</string>
+    <string name="star_task">Star</string>
     <string name="task_input_hint">Title\n\nDescription...</string>
+    <string name="unstar_task">Unstar</string>
 </resources>

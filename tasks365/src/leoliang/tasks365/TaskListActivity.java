@@ -3,6 +3,10 @@ package leoliang.tasks365;
 import greendroid.app.GDActivity;
 import greendroid.widget.ActionBarItem;
 import greendroid.widget.ActionBarItem.Type;
+import greendroid.widget.QuickAction;
+import greendroid.widget.QuickActionBar;
+import greendroid.widget.QuickActionWidget;
+import greendroid.widget.QuickActionWidget.OnQuickActionClickListener;
 
 import java.util.Calendar;
 
@@ -14,12 +18,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Config;
 import android.util.Log;
-import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.DatePicker;
 import android.widget.ListView;
 
@@ -31,6 +32,9 @@ public class TaskListActivity extends GDActivity {
     private static final int MENU_MARK_TASK_DONE = 1;
     private static final int MENU_MARK_TASK_UNDONE = 2;
     private static final int MENU_SCHEDULE_TASK = 3;
+    private static final int MENU_EDIT_TASK = 4;
+    private static final int MENU_STAR_TASK = 5;
+    private static final int MENU_UNSTAR_TASK = 6;
 
     private SingleDayTaskQuery query;
     private TaskManager taskManager;
@@ -60,42 +64,45 @@ public class TaskListActivity extends GDActivity {
 
         ListView listView = (ListView) findViewById(R.id.taskList);
         listView.setAdapter(adapter);
-        registerForContextMenu(listView);
-    }
-
-    @Override
-    public void onCreateContextMenu(ContextMenu menu, View view, ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, view, menuInfo);
-        if (view.getId() == R.id.taskList) {
-            AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
-            Task task = adapter.getItem(info.position);
-            menu.setHeaderTitle(task.title);
-            if (task.isDone) {
-                menu.add(Menu.NONE, MENU_MARK_TASK_UNDONE, Menu.NONE, R.string.mark_task_undone);
-            } else {
-                menu.add(Menu.NONE, MENU_MARK_TASK_DONE, Menu.NONE, R.string.mark_task_done);
-                menu.add(Menu.NONE, MENU_SCHEDULE_TASK, Menu.NONE, R.string.schedule_task);
+        listView.setOnItemClickListener(new OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                showQuickActionBar(view, position);
             }
-        }
+        });
     }
 
-    @Override
-    public boolean onContextItemSelected(MenuItem item) {
-        AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-        Task task = adapter.getItem(info.position);
-        switch (item.getItemId()) {
-        case MENU_MARK_TASK_DONE:
-            taskManager.markTaskDone(task);
-            return true;
-        case MENU_MARK_TASK_UNDONE:
-            taskManager.markTaskUndone(task);
-            return true;
-        case MENU_SCHEDULE_TASK:
-            scheduleTask(task);
-            return true;
-        default:
-            return super.onContextItemSelected(item);
+    private void showQuickActionBar(View view, final int position) {
+        final Task task = adapter.getItem(position);
+        QuickActionBar bar = new QuickActionBar(this);
+        if (task.isDone) {
+            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, this, R.drawable.gd_action_bar_export,
+                    R.string.mark_task_undone));
+        } else {
+            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, this, R.drawable.gd_action_bar_export,
+                    R.string.mark_task_done));
+            bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.gd_action_bar_star, R.string.star_task));
+            bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, this, R.drawable.gd_action_bar_edit,
+                    R.string.schedule_task));
+            bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, this, R.drawable.gd_action_bar_edit, R.string.edit_task));
         }
+        bar.setOnQuickActionClickListener(new OnQuickActionClickListener() {
+            @Override
+            public void onQuickActionClicked(QuickActionWidget widget, int actionId) {
+                switch (actionId) {
+                case MENU_MARK_TASK_DONE:
+                    taskManager.markTaskDone(task);
+                    break;
+                case MENU_MARK_TASK_UNDONE:
+                    taskManager.markTaskUndone(task);
+                    break;
+                case MENU_SCHEDULE_TASK:
+                    scheduleTask(task);
+                    break;
+                }
+            }
+        });
+        bar.show(view);
     }
 
     private void scheduleTask(final Task task) {
