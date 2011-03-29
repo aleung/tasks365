@@ -44,9 +44,18 @@ public class AndroidCalendar {
 
     private static final String LOG_TAG = "tasks365";
 
-    private static final String[] TASK_PROJECTION = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
+    /**
+     * What columns are in the result of event query methods.
+     */
+    private static final String[] TASK_COLUMNS = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
             Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND,
             Calendar.Events.ALL_DAY };
+
+    /**
+     * What columns are in the result of {@link #queryCalendars}.
+     */
+    private static final String[] CALENDAR_COLUMNS = { Calendar.Calendars._ID, Calendar.Calendars.DISPLAY_NAME,
+            Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
 
     private static final String TASK_SORT_ORDER = Calendar.Events.DTSTART;
 
@@ -58,9 +67,6 @@ public class AndroidCalendar {
 
     private static final String PASSED_EVENT_SELECTION_CRITERIA = Calendar.Events.CALENDAR_ID + "=? AND "
             + Calendar.Events.DTEND + "<=? AND " + Calendar.Events.DTSTART + "<? AND " + Calendar.Events.ALL_DAY + "=?";
-
-    private static final String[] CALENDAR_PROJECTION = { Calendar.Calendars._ID, Calendar.Calendars.DISPLAY_NAME,
-            Calendar.Calendars.COLOR, Calendar.Calendars.SYNC_EVENTS, Calendar.Calendars.SELECTED };
 
     private Context context;
 
@@ -147,7 +153,7 @@ public class AndroidCalendar {
      * @return all calendars
      */
     public Cursor queryCalendars() {
-        return Calendar.Calendars.query(context.getContentResolver(), CALENDAR_PROJECTION, null, null);
+        return Calendar.Calendars.query(context.getContentResolver(), CALENDAR_COLUMNS, null, null);
     }
 
     /**
@@ -171,7 +177,7 @@ public class AndroidCalendar {
         whereArgs[1] = String.valueOf(from.getTimeInMillis());
         whereArgs[2] = String.valueOf(to.getTimeInMillis());
         Log.v(LOG_TAG, "Query non all day events in [" + Task.formatDate(from) + ", " + Task.formatDate(to) + ")");
-        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_COLUMNS,
                 NON_ALL_DAY_EVENT_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
         return cursor;
     }
@@ -196,7 +202,7 @@ public class AndroidCalendar {
         whereArgs[1] = String.valueOf(umtDate.getTimeInMillis());
 
         Log.v(LOG_TAG, "Query all day events at " + Task.formatDate(umtDate));
-        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_COLUMNS,
                 ALL_DAY_EVENT_SELECTION_CRITERIA, whereArgs, null);
         return cursor;
     }
@@ -240,7 +246,7 @@ public class AndroidCalendar {
         Log.v(LOG_TAG,
                 "Query " + (isAllDay ? "all day" : "non all day") + " events before "
                         + Task.formatDate(beforeDate.getTime()));
-        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_PROJECTION,
+        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_COLUMNS,
                 PASSED_EVENT_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
         return cursor;
     }
@@ -254,7 +260,7 @@ public class AndroidCalendar {
         Cursor cursor = null;
         try {
             // TODO: set URI base
-            cursor = Calendar.Calendars.query(context.getContentResolver(), CALENDAR_PROJECTION, null, null);
+            cursor = Calendar.Calendars.query(context.getContentResolver(), CALENDAR_COLUMNS, null, null);
         } catch (Exception e) {
             // eat
         }
@@ -265,7 +271,7 @@ public class AndroidCalendar {
             calendars = Uri.parse("content://com.android.calendar/calendars");
             try {
                 // TODO: set URI base
-                cursor = Calendar.Calendars.query(context.getContentResolver(), CALENDAR_PROJECTION, null, null);
+                cursor = Calendar.Calendars.query(context.getContentResolver(), CALENDAR_COLUMNS, null, null);
             } catch (Exception e) {
                 // eat
             }
