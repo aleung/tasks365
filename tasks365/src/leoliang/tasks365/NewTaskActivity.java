@@ -12,9 +12,6 @@ public class NewTaskActivity extends Activity {
     private TaskManager taskManager;
     private EditText editText;
 
-    // Read from preference
-    private long calendarId = 14;
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -22,7 +19,8 @@ public class NewTaskActivity extends Activity {
 
         editText = (EditText) findViewById(R.id.text);
 
-        taskManager = new TaskManager(this, calendarId);
+        final MyApplication app = (MyApplication) getApplication();
+        taskManager = new TaskManager(this, app.getCalendarId());
 
         Button addButton = (Button) findViewById(R.id.addTaskButton);
         addButton.setOnClickListener(new OnClickListener() {

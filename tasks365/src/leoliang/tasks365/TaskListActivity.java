@@ -18,6 +18,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Config;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -28,7 +30,7 @@ public class TaskListActivity extends GDActivity {
 
     private static final String LOG_TAG = "tasks365";
 
-    // context menu
+    // context menu / quick action
     private static final int MENU_MARK_TASK_DONE = 1;
     private static final int MENU_MARK_TASK_UNDONE = 2;
     private static final int MENU_SCHEDULE_TASK = 3;
@@ -36,30 +38,37 @@ public class TaskListActivity extends GDActivity {
     private static final int MENU_STAR_TASK = 5;
     private static final int MENU_UNSTAR_TASK = 6;
 
+    // option menu
+    private static final int MENU_SETTING = 1;
+
     private SingleDayTaskQuery query;
     private TaskManager taskManager;
     private TaskListAdapter adapter;
+    private MyApplication application;
 
-    // Read from preference
-    private long calendarId = 14;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         if (Config.DEBUG) {
             Log.v(LOG_TAG, "onCreate()");
         }
+
+        application = (MyApplication) getApplication();
+        validateCalendar();
+
         super.onCreate(savedInstanceState);
         setActionBarContentView(R.layout.main);
 
         addActionBarItem(Type.Add, R.id.action_bar_add);
 
         // TODO: move it to somewhere more appropriate
-        taskManager = new TaskManager(this, calendarId);
+        taskManager = new TaskManager(this, application.getCalendarId());
         taskManager.dealWithTasksInThePast();
+        // end of TODO
 
         adapter = new TaskListAdapter(this);
 
-        query = new SingleDayTaskQuery(this, calendarId, adapter);
+        query = new SingleDayTaskQuery(this, application.getCalendarId(), adapter);
         query.query(Calendar.getInstance());
 
         ListView listView = (ListView) findViewById(R.id.taskList);
@@ -70,6 +79,13 @@ public class TaskListActivity extends GDActivity {
                 showQuickActionBar(view, position);
             }
         });
+    }
+
+    private void validateCalendar() {
+        if (application.getCalendarId() == -1) {
+            startActivity(new Intent(application, CalendarChooseActivity.class));
+        }
+        // TODO: check calendar existence, is synced
     }
 
     private void showQuickActionBar(View view, final int position) {
@@ -134,4 +150,19 @@ public class TaskListActivity extends GDActivity {
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(Menu.NONE, MENU_SETTING, Menu.NONE, R.string.settings).setIcon(android.R.drawable.ic_menu_preferences);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+        case MENU_SETTING:
+            startActivity(new Intent(getApplicationContext(), SettingsActivity.class));
+            return true;
+        }
+        return false;
+    }
 }
