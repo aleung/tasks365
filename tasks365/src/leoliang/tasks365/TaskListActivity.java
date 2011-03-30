@@ -45,10 +45,11 @@ public class TaskListActivity extends GDActivity {
     private TaskManager taskManager;
     private TaskListAdapter adapter;
     private MyApplication application;
+    private long calendarId = -1;
 
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         if (Config.DEBUG) {
             Log.v(LOG_TAG, "onCreate()");
         }
@@ -61,15 +62,8 @@ public class TaskListActivity extends GDActivity {
 
         addActionBarItem(Type.Add, R.id.action_bar_add);
 
-        // TODO: move it to somewhere more appropriate
-        taskManager = new TaskManager(this, application.getCalendarId());
-        taskManager.dealWithTasksInThePast();
-        // end of TODO
-
         adapter = new TaskListAdapter(this);
-
-        query = new SingleDayTaskQuery(this, application.getCalendarId(), adapter);
-        query.query(Calendar.getInstance());
+        initializeQuery();
 
         ListView listView = (ListView) findViewById(R.id.taskList);
         listView.setAdapter(adapter);
@@ -79,6 +73,20 @@ public class TaskListActivity extends GDActivity {
                 showQuickActionBar(view, position);
             }
         });
+
+        // TODO: move it to background service
+        taskManager = new TaskManager(this, application.getCalendarId());
+        taskManager.dealWithTasksInThePast();
+        // end of TODO
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (application.getCalendarId() != calendarId) {
+            // setting has been changed, re-initialize query to show new calendar
+            initializeQuery();
+        }
     }
 
     private void validateCalendar() {
@@ -86,6 +94,12 @@ public class TaskListActivity extends GDActivity {
             startActivity(new Intent(application, CalendarChooseActivity.class));
         }
         // TODO: check calendar existence, is synced
+    }
+
+    private void initializeQuery() {
+        calendarId = application.getCalendarId();
+        query = new SingleDayTaskQuery(this, calendarId, adapter);
+        query.query(Calendar.getInstance());
     }
 
     private void showQuickActionBar(View view, final int position) {
