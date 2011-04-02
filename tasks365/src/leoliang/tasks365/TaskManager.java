@@ -81,4 +81,13 @@ public class TaskManager {
         calendar.updateTask(task);
     }
 
+    public void starTask(Task task) {
+        task.isStarred = true;
+        calendar.updateTask(task);
+    }
+
+    public void unstarTask(Task task) {
+        task.isStarred = false;
+        calendar.updateTask(task);
+    }
 }

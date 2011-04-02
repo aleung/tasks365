@@ -38,4 +38,10 @@ public class MyApplication extends GDApplication {
     public void setCalendarId(long id) {
         getPreferences().edit().putLong(PREFERENCE_CALENDAR_ID, id).commit();
     }
+
+    @Override
+    public Class<?> getHomeActivityClass() {
+        return TaskListActivity.class;
+    }
+
 }

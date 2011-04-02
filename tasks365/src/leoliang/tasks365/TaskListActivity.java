@@ -10,6 +10,7 @@ import greendroid.widget.QuickActionWidget.OnQuickActionClickListener;
 
 import java.util.Calendar;
 
+import leoliang.tasks365.TaskListAdapter.ViewHolder;
 import leoliang.tasks365.task.SingleDayTaskQuery;
 import leoliang.tasks365.task.Task;
 import android.app.DatePickerDialog;
@@ -70,7 +71,8 @@ public class TaskListActivity extends GDActivity {
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                showQuickActionBar(view, position);
+                ViewHolder viewHolder = (ViewHolder) view.getTag();
+                showQuickActionBar(viewHolder.title, position);
             }
         });
 
@@ -111,7 +113,13 @@ public class TaskListActivity extends GDActivity {
         } else {
             bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, this, R.drawable.gd_action_bar_export,
                     R.string.mark_task_done));
-            bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.gd_action_bar_star, R.string.star_task));
+            if (task.isStarred) {
+                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, this, R.drawable.action_star_empty,
+                        R.string.unstar_task));
+            } else {
+                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.action_star,
+                        R.string.star_task));
+            }
             bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, this, R.drawable.gd_action_bar_edit,
                     R.string.schedule_task));
             bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, this, R.drawable.gd_action_bar_edit, R.string.edit_task));
@@ -128,6 +136,12 @@ public class TaskListActivity extends GDActivity {
                     break;
                 case MENU_SCHEDULE_TASK:
                     scheduleTask(task);
+                    break;
+                case MENU_STAR_TASK:
+                    taskManager.starTask(task);
+                    break;
+                case MENU_UNSTAR_TASK:
+                    taskManager.unstarTask(task);
                     break;
                 }
             }
