@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<TextView xmlns:android="http://schemas.android.com/apk/res/android" 
-        android:id="@+id/taskTitle"
-        android:layout_width="fill_parent" 
-        android:layout_height="wrap_content"
-        android:paddingLeft="50sp"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:background="@android:drawable/list_selector_background"
+        android:gravity="bottom"
         android:paddingTop="5dip"
         android:paddingBottom="5dip"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        />
+        >
+
+    <TextView android:id="@+id/taskTitle"
+            android:layout_width="fill_parent" 
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:paddingLeft="50sp"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            />
+
+</RelativeLayout>

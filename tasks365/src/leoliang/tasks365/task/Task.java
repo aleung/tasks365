@@ -56,6 +56,24 @@ public class Task {
     // extra fields stored in JSON
     public Calendar due = null;
 
+    public static Calendar endOfToday() {
+        Calendar time = Calendar.getInstance();
+        time.set(Calendar.HOUR_OF_DAY, 23);
+        time.set(Calendar.MINUTE, 59);
+        time.set(Calendar.SECOND, 0);
+        time.set(Calendar.MILLISECOND, 0);
+        return time;
+    }
+
+    public static Calendar beginOfToday() {
+        Calendar time = Calendar.getInstance();
+        time.set(Calendar.HOUR_OF_DAY, 0);
+        time.set(Calendar.MINUTE, 0);
+        time.set(Calendar.SECOND, 0);
+        time.set(Calendar.MILLISECOND, 0);
+        return time;
+    }
+
     public static String formatDate(Date date) {
         return dateFormatter.format(date);
     }
@@ -145,11 +163,7 @@ public class Task {
      * Schedule as an all day even in today.
      */
     public void scheduleToday() {
-        startTime = Calendar.getInstance();
-        startTime.set(Calendar.HOUR_OF_DAY, 23);
-        startTime.set(Calendar.MINUTE, 59);
-        startTime.set(Calendar.SECOND, 0);
-        startTime.set(Calendar.MILLISECOND, 0);
+        startTime = endOfToday();
         endTime = (Calendar) startTime.clone();
         isAllDay = true;
     }
@@ -178,8 +192,10 @@ public class Task {
             if (isAllDay) {
                 json.put(
                         "scheduledTime",
-                        new JSONObject().put("minute", startTime.get(Calendar.MINUTE)).put("hour",
-                                startTime.get(Calendar.HOUR_OF_DAY)));
+                        new JSONObject().put("hour", startTime.get(Calendar.HOUR_OF_DAY))
+                                .put("minute", startTime.get(Calendar.MINUTE))
+                                .put("second", startTime.get(Calendar.SECOND))
+                                .put("millisecond", startTime.get(Calendar.MILLISECOND)));
             }
             if (json.length() > 0) {
                 s.append("\n\n");
@@ -228,8 +244,8 @@ public class Task {
                     if (scheduledTimeJson != null) {
                         task.startTime.set(Calendar.HOUR_OF_DAY, scheduledTimeJson.optInt("hour", 23));
                         task.startTime.set(Calendar.MINUTE, scheduledTimeJson.optInt("minute", 59));
-                        task.startTime.set(Calendar.SECOND, 0);
-                        task.startTime.set(Calendar.MILLISECOND, 0);
+                        task.startTime.set(Calendar.SECOND, scheduledTimeJson.optInt("second", 0));
+                        task.startTime.set(Calendar.MILLISECOND, scheduledTimeJson.optInt("millisecond", 0));
                         task.endTime = (Calendar) task.startTime.clone();
                     }
                 }
