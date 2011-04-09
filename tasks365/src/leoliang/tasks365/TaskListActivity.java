@@ -10,6 +10,8 @@ import greendroid.widget.QuickActionWidget.OnQuickActionClickListener;
 
 import java.util.Calendar;
 
+import leoliang.tasks365.DraggableListView.DropListener;
+import leoliang.tasks365.TaskListAdapter.ViewHolder;
 import leoliang.tasks365.task.SingleDayTaskQuery;
 import leoliang.tasks365.task.Task;
 import android.app.DatePickerDialog;
@@ -24,7 +26,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.DatePicker;
-import android.widget.ListView;
 
 public class TaskListActivity extends GDActivity {
 
@@ -45,10 +46,11 @@ public class TaskListActivity extends GDActivity {
     private TaskManager taskManager;
     private TaskListAdapter adapter;
     private MyApplication application;
+    private long calendarId = -1;
 
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         if (Config.DEBUG) {
             Log.v(LOG_TAG, "onCreate()");
         }
@@ -61,24 +63,103 @@ public class TaskListActivity extends GDActivity {
 
         addActionBarItem(Type.Add, R.id.action_bar_add);
 
-        // TODO: move it to somewhere more appropriate
-        taskManager = new TaskManager(this, application.getCalendarId());
-        taskManager.dealWithTasksInThePast();
-        // end of TODO
-
         adapter = new TaskListAdapter(this);
+        initializeQuery();
 
-        query = new SingleDayTaskQuery(this, application.getCalendarId(), adapter);
-        query.query(Calendar.getInstance());
-
-        ListView listView = (ListView) findViewById(R.id.taskList);
+        DraggableListView listView = (DraggableListView) findViewById(R.id.taskList);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                showQuickActionBar(view, position);
+                ViewHolder viewHolder = (ViewHolder) view.getTag();
+                showQuickActionBar(viewHolder.title, position);
             }
         });
+        listView.setDropListener(new DropListener() {
+            @Override
+            public void drop(int from, int to) {
+                if (from == to) {
+                    return;
+                }
+                moveTaskToPosition(from, to);
+            }
+        });
+
+        // TODO: move it to background service
+        taskManager = new TaskManager(this, application.getCalendarId());
+        taskManager.dealWithTasksInThePast();
+        // end of TODO
+    }
+
+    /**
+     * The list is sort by start time of the tasks. To move a task, the start time has to be updated.
+     * 
+     * @param originalPosition
+     * @param newPosition
+     */
+    private void moveTaskToPosition(int originalPosition, int newPosition) {
+        Log.d(LOG_TAG, "moveTaskToPosition: " + originalPosition + " -> " + newPosition);
+
+        if (newPosition >= adapter.getCount()) {
+            Log.w(LOG_TAG, "moveTaskToPosition: Invalid new position " + newPosition);
+            return;
+        }
+
+        int targetPosition = newPosition;
+        if (newPosition > originalPosition) {
+            targetPosition = newPosition + 1;
+        }
+
+        Task taskToBeMoved = adapter.getItem(originalPosition);
+        if (!taskToBeMoved.isAllDay || taskToBeMoved.isDone) {
+            // TODO: notify user: non all day task and done task isn't draggable
+            Log.i(LOG_TAG, "Non all day task and done task is not allow to change start time.");
+            return;
+        }
+
+        Task prevItem = null;
+        Calendar prevItemTime;
+        if (targetPosition == 0) {
+            prevItemTime = Task.beginOfToday();
+        } else {
+            prevItem = adapter.getItem(targetPosition - 1);
+            prevItemTime = getTaskStartTime(prevItem);
+        }
+
+        Calendar nextItemTime;
+        if (targetPosition < adapter.getCount()) {
+            nextItemTime = getTaskStartTime(adapter.getItem(targetPosition));
+        } else {
+            nextItemTime = Task.endOfToday();
+        }
+
+        if (prevItemTime.equals(nextItemTime)) {
+            if ((targetPosition > 0) && prevItem.isAllDay && !prevItem.isDone) {
+                moveTaskToPosition(targetPosition - 1, targetPosition - 1);
+            }
+            prevItemTime = getTaskStartTime(prevItem);
+        }
+
+        taskToBeMoved.isNew = false;
+        taskToBeMoved.startTime.setTimeInMillis((prevItemTime.getTimeInMillis() + nextItemTime.getTimeInMillis()) / 2);
+        taskToBeMoved.endTime = (Calendar) taskToBeMoved.startTime.clone();
+        taskManager.saveTask(taskToBeMoved);
+    }
+
+    private Calendar getTaskStartTime(Task task) {
+        if (task.isDone) {
+            return Task.endOfToday();
+        }
+        return task.startTime;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (application.getCalendarId() != calendarId) {
+            // setting has been changed, re-initialize query to show new calendar
+            initializeQuery();
+        }
     }
 
     private void validateCalendar() {
@@ -86,6 +167,12 @@ public class TaskListActivity extends GDActivity {
             startActivity(new Intent(application, CalendarChooseActivity.class));
         }
         // TODO: check calendar existence, is synced
+    }
+
+    private void initializeQuery() {
+        calendarId = application.getCalendarId();
+        query = new SingleDayTaskQuery(this, calendarId, adapter);
+        query.query(Calendar.getInstance());
     }
 
     private void showQuickActionBar(View view, final int position) {
@@ -97,7 +184,13 @@ public class TaskListActivity extends GDActivity {
         } else {
             bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, this, R.drawable.gd_action_bar_export,
                     R.string.mark_task_done));
-            bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.gd_action_bar_star, R.string.star_task));
+            if (task.isStarred) {
+                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, this, R.drawable.action_star_empty,
+                        R.string.unstar_task));
+            } else {
+                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.action_star,
+                        R.string.star_task));
+            }
             bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, this, R.drawable.gd_action_bar_edit,
                     R.string.schedule_task));
             bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, this, R.drawable.gd_action_bar_edit, R.string.edit_task));
@@ -114,6 +207,12 @@ public class TaskListActivity extends GDActivity {
                     break;
                 case MENU_SCHEDULE_TASK:
                     scheduleTask(task);
+                    break;
+                case MENU_STAR_TASK:
+                    taskManager.starTask(task);
+                    break;
+                case MENU_UNSTAR_TASK:
+                    taskManager.unstarTask(task);
                     break;
                 }
             }

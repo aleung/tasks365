@@ -1,32 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="fill_parent" android:layout_height="wrap_content"
         android:background="@android:drawable/list_selector_background"
-        android:paddingRight="5dip">
+        android:gravity="bottom"
+        android:paddingTop="8dip"
+        android:paddingBottom="8dip"
+        >
 
-    <FrameLayout android:id="@+id/statusIndicator"
-            android:layout_width="20dip" android:layout_height="wrap_content"
+    <TextView android:id="@+id/daysToDue"
+            android:layout_width="50sp" android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
-            android:paddingTop="14dip">
-        <TextView android:id="@+id/daysToDue"
-                android:layout_width="fill_parent" android:layout_height="wrap_content"
-                android:visibility="invisible"/>
-    </FrameLayout>
+            />
     
-    <TextView android:id="@+id/tags"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_toRightOf="@+id/statusIndicator" android:layout_toLeftOf="@+id/dragHandle" 
-            android:textSize="14sp" />
+    <TextView android:id="@+id/scheduleTime"
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/daysToDue"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#a1a1a1" 
+            />
 
     <TextView android:id="@+id/taskTitle"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_toRightOf="@+id/statusIndicator" android:layout_toLeftOf="@+id/dragHandle" 
-            android:layout_below="@+id/tags"
-            android:textSize="20sp" />
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/scheduleTime"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            />
 
-    <FrameLayout android:id="@+id/dragHandle"
-            android:layout_width="wrap_content" android:layout_height="fill_parent"
-            android:layout_alignParentRight="true" />
-    
+    <TextView android:id="@+id/tags"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/taskTitle"
+            android:layout_weight="1"
+            android:layout_marginLeft="5dip"
+            android:textAppearance="?android:attr/textAppearanceSmall" 
+            android:textColor="#a1a1a1" 
+            />
+            
+    <ImageView android:id="@+id/star"
+            android:layout_width="wrap_content" 
+            android:layout_height="wrap_content"
+            android:paddingRight="5dip"
+            android:layout_alignParentRight="true"
+            android:src="@drawable/star" />
+
 </RelativeLayout>

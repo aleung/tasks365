@@ -1,6 +1,7 @@
 package leoliang.tasks365;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 public class TaskListAdapter extends BaseAdapter implements QueryResultObserver {
@@ -21,6 +23,8 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
     // view type
     private static final int VIEW_TYPE_OPEN_TASK = 0;
     private static final int VIEW_TYPE_FINISHED_TASK = 1;
+
+    private static final DateFormat timeFormatter = new SimpleDateFormat("HH:mm ");
 
     private List<Task> tasks;
     private LayoutInflater inflater;
@@ -94,21 +98,20 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
     private void bindViewForOpenTask(View view, final Task task) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
         viewHolder.title.setText(task.title);
-        String tags = "";
-        if (!task.isAllDay) {
-            tags += formatStartAndEndTime(task.startTime, task.endTime);
+        String scheduleTime = task.isAllDay ? "" : formatTime(task.startTime);
+        viewHolder.scheduleTime.setText(scheduleTime);
+        viewHolder.tags.setText(task.isNew ? "[new]" : "");
+        if (task.isStarred) {
+            viewHolder.star.setVisibility(View.VISIBLE);
         }
-        if (task.isNew) {
-            tags += " [NEW]";
+        else {
+            viewHolder.star.setVisibility(View.INVISIBLE);
         }
-        viewHolder.tags.setText(tags);
-
         // TODO: tags, daysToDue
     }
 
-    private String formatStartAndEndTime(Calendar startTime, Calendar endTime) {
-        DateFormat formatter = DateFormat.getTimeInstance();
-        return formatter.format(startTime.getTime()) + " - " + formatter.format(endTime.getTime());
+    private String formatTime(Calendar time) {
+        return timeFormatter.format(time.getTime());
     }
 
     private View newView(Task task) {
@@ -133,6 +136,8 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
         viewHolder.title = (TextView) view.findViewById(R.id.taskTitle);
         viewHolder.daysToDue = (TextView) view.findViewById(R.id.daysToDue);
         viewHolder.tags = (TextView) view.findViewById(R.id.tags);
+        viewHolder.scheduleTime = (TextView) view.findViewById(R.id.scheduleTime);
+        viewHolder.star = (ImageView) view.findViewById(R.id.star);
         view.setTag(viewHolder);
         return view;
     }
@@ -148,14 +153,15 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
         notifyDataSetInvalidated();
     }
 
-
     /**
      * Cache the sub views inside a list item view.
      */
-    private class ViewHolder {
+    public class ViewHolder {
         public TextView title;
         public TextView tags;
         public TextView daysToDue;
+        public TextView scheduleTime;
+        public ImageView star;
     }
 
 }
