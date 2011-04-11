@@ -41,6 +41,7 @@ public class Task {
     public Calendar startTime = Calendar.getInstance();
     public Calendar endTime = Calendar.getInstance();
     public boolean isAllDay = true;
+    public boolean isRecurrentEvent = false; // read only field
 
     /** pure title, without tags */
     public String title;
@@ -55,6 +56,7 @@ public class Task {
 
     // extra fields stored in JSON
     public Calendar due = null;
+
 
     public static Calendar endOfToday() {
         Calendar time = Calendar.getInstance();

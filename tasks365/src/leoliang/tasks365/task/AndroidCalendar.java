@@ -49,7 +49,7 @@ public class AndroidCalendar {
      */
     private static final String[] TASK_COLUMNS = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
             Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND,
-            Calendar.Events.ALL_DAY };
+            Calendar.Events.ALL_DAY, Calendar.Events.RRULE };
 
     /**
      * What columns are in the result of {@link #queryCalendars}.
@@ -92,6 +92,8 @@ public class AndroidCalendar {
         Log.v(LOG_TAG,
                 "Read task. dtStart=" + Task.formatDate(task.startTime) + ", dtEnd=" + Task.formatDate(task.endTime));
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
+        String recurrenceRule = c.getString(c.getColumnIndexOrThrow(Calendar.Events.RRULE));
+        task.isRecurrentEvent = ((recurrenceRule != null) && (recurrenceRule.length() == 0));
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
         task.setDescriptionWithExtraData(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
@@ -172,13 +174,9 @@ public class AndroidCalendar {
         java.util.Calendar to = (java.util.Calendar) from.clone();
         to.add(java.util.Calendar.DAY_OF_MONTH, 1);
 
-        String[] whereArgs = new String[3];
-        whereArgs[0] = String.valueOf(calendarId);
-        whereArgs[1] = String.valueOf(from.getTimeInMillis());
-        whereArgs[2] = String.valueOf(to.getTimeInMillis());
         Log.v(LOG_TAG, "Query non all day events in [" + Task.formatDate(from) + ", " + Task.formatDate(to) + ")");
-        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_COLUMNS,
-                NON_ALL_DAY_EVENT_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
+        Cursor cursor = Calendar.Instances.query(context.getContentResolver(), TASK_COLUMNS, from.getTimeInMillis(),
+                to.getTimeInMillis(), calendarId);
         return cursor;
     }
 

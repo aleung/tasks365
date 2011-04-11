@@ -44,10 +44,12 @@ public class TaskManager {
         }
         do {
             Task task = AndroidCalendar.readTask(cursor);
-            if (task.isDone) {
-                archiveTask(task);
-            } else {
-                moveTaskToToday(task);
+            if (!task.isRecurrentEvent) {
+                if (task.isDone) {
+                    archiveTask(task);
+                } else {
+                    moveTaskToToday(task);
+                }
             }
         } while (cursor.moveToNext());
     }

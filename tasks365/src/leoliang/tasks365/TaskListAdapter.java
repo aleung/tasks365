@@ -100,7 +100,14 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
         viewHolder.title.setText(task.title);
         String scheduleTime = task.isAllDay ? "" : formatTime(task.startTime);
         viewHolder.scheduleTime.setText(scheduleTime);
-        viewHolder.tags.setText(task.isNew ? "[new]" : "");
+        String tags = "";
+        if (task.isNew) {
+            tags += "[new]";
+        }
+        if (task.isRecurrentEvent) {
+            tags += "[repeat]";
+        }
+        viewHolder.tags.setText(tags);
         if (task.isStarred) {
             viewHolder.star.setVisibility(View.VISIBLE);
         }
