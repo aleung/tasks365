@@ -14,6 +14,9 @@ import leoliang.tasks365.DraggableListView.DropListener;
 import leoliang.tasks365.TaskListAdapter.ViewHolder;
 import leoliang.tasks365.task.SingleDayTaskQuery;
 import leoliang.tasks365.task.Task;
+import leoliang.tasks365.task.TaskManager;
+import leoliang.tasks365.task.TaskOrderMover;
+import leoliang.tasks365.task.TaskOrderMover.MoveNotAllowException;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Intent;
@@ -26,6 +29,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.DatePicker;
+import android.widget.Toast;
 
 public class TaskListActivity extends GDActivity {
 
@@ -81,7 +85,11 @@ public class TaskListActivity extends GDActivity {
                 if (from == to) {
                     return;
                 }
-                moveTaskToPosition(from, to);
+                try {
+                    new TaskOrderMover(adapter, taskManager).moveTaskToPosition(from, to);
+                } catch (MoveNotAllowException e) {
+                    Toast.makeText(TaskListActivity.this, R.string.done_task_no_move, Toast.LENGTH_LONG);
+                }
             }
         });
 
@@ -89,68 +97,6 @@ public class TaskListActivity extends GDActivity {
         taskManager = new TaskManager(this, application.getCalendarId());
         taskManager.dealWithTasksInThePast();
         // end of TODO
-    }
-
-    /**
-     * The list is sort by start time of the tasks. To move a task, the start time has to be updated.
-     * 
-     * @param originalPosition
-     * @param newPosition
-     */
-    private void moveTaskToPosition(int originalPosition, int newPosition) {
-        Log.d(LOG_TAG, "moveTaskToPosition: " + originalPosition + " -> " + newPosition);
-
-        if (newPosition >= adapter.getCount()) {
-            Log.w(LOG_TAG, "moveTaskToPosition: Invalid new position " + newPosition);
-            return;
-        }
-
-        int targetPosition = newPosition;
-        if (newPosition > originalPosition) {
-            targetPosition = newPosition + 1;
-        }
-
-        Task taskToBeMoved = adapter.getItem(originalPosition);
-        if (!taskToBeMoved.isAllDay || taskToBeMoved.isDone) {
-            // TODO: notify user: non all day task and done task isn't draggable
-            Log.i(LOG_TAG, "Non all day task and done task is not allow to change start time.");
-            return;
-        }
-
-        Task prevItem = null;
-        Calendar prevItemTime;
-        if (targetPosition == 0) {
-            prevItemTime = Task.beginOfToday();
-        } else {
-            prevItem = adapter.getItem(targetPosition - 1);
-            prevItemTime = getTaskStartTime(prevItem);
-        }
-
-        Calendar nextItemTime;
-        if (targetPosition < adapter.getCount()) {
-            nextItemTime = getTaskStartTime(adapter.getItem(targetPosition));
-        } else {
-            nextItemTime = Task.endOfToday();
-        }
-
-        if (prevItemTime.equals(nextItemTime)) {
-            if ((targetPosition > 0) && prevItem.isAllDay && !prevItem.isDone) {
-                moveTaskToPosition(targetPosition - 1, targetPosition - 1);
-            }
-            prevItemTime = getTaskStartTime(prevItem);
-        }
-
-        taskToBeMoved.isNew = false;
-        taskToBeMoved.startTime.setTimeInMillis((prevItemTime.getTimeInMillis() + nextItemTime.getTimeInMillis()) / 2);
-        taskToBeMoved.endTime = (Calendar) taskToBeMoved.startTime.clone();
-        taskManager.saveTask(taskToBeMoved);
-    }
-
-    private Calendar getTaskStartTime(Task task) {
-        if (task.isDone) {
-            return Task.endOfToday();
-        }
-        return task.startTime;
     }
 
     @Override

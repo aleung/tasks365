@@ -1,5 +1,6 @@
 package leoliang.tasks365;
 
+import leoliang.tasks365.task.TaskManager;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
