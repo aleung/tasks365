@@ -19,8 +19,7 @@ public class NewTaskActivity extends Activity {
 
         editText = (EditText) findViewById(R.id.text);
 
-        final MyApplication app = (MyApplication) getApplication();
-        taskManager = new TaskManager(this, app.getCalendarId());
+        taskManager = new TaskManager(this, (MyApplication) getApplication());
 
         Button addButton = (Button) findViewById(R.id.addTaskButton);
         addButton.setOnClickListener(new OnClickListener() {

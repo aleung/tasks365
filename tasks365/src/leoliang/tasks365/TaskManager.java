@@ -1,5 +1,7 @@
 package leoliang.tasks365;
 
+import java.util.Calendar;
+
 import leoliang.tasks365.task.AndroidCalendar;
 import leoliang.tasks365.task.Task;
 import android.content.Context;
@@ -10,12 +12,12 @@ public class TaskManager {
 
     private static final String LOG_TAG = "tasks365";
 
+    private MyApplication application;
     private AndroidCalendar calendar;
-    private long calendarId;
 
-    public TaskManager(Context context, long calendarId) {
+    public TaskManager(Context context, MyApplication application) {
         calendar = new AndroidCalendar(context);
-        this.calendarId = calendarId;
+        this.application = application;
     }
 
     public void markTaskDone(Task task) {
@@ -29,13 +31,24 @@ public class TaskManager {
     }
 
     public void dealWithTasksInThePast() {
-        Cursor cursor = calendar.queryAllDayEventsInPastDays(calendarId);
-        dealWithTasksInThePast(cursor);
-        cursor.close();
+        long calendarId = application.getCalendarId();
+        Calendar date = Calendar.getInstance();
+        date.setTimeInMillis(application.getLastRunTime());
+        Cursor cursor;
 
-        cursor = calendar.queryNonAllDayEventsInPastDays(calendarId);
-        dealWithTasksInThePast(cursor);
-        cursor.close();
+        while (date.before(AndroidCalendar.beginOfToday())) {
+            cursor = calendar.queryAllDayEventsByDate(calendarId, date);
+            dealWithTasksInThePast(cursor);
+            cursor.close();
+
+            cursor = calendar.queryNonAllDayEventsByDate(calendarId, date);
+            dealWithTasksInThePast(cursor);
+            cursor.close();
+
+            date.add(java.util.Calendar.DATE, 1);
+            application.setLastRunTime(date.getTimeInMillis());
+        }
+        application.setLastRunTime(System.currentTimeMillis());
     }
 
     private void dealWithTasksInThePast(Cursor cursor) {
@@ -72,7 +85,7 @@ public class TaskManager {
     public void createTask(String title, String description) {
         Task task = new Task();
         task.isNew = true;
-        task.calendarId = calendarId;
+        task.calendarId = application.getCalendarId();
         task.title = title;
         task.description = description;
         task.scheduleToday();

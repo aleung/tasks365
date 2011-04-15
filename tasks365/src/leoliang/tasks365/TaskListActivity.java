@@ -12,6 +12,7 @@ import java.util.Calendar;
 
 import leoliang.tasks365.DraggableListView.DropListener;
 import leoliang.tasks365.TaskListAdapter.ViewHolder;
+import leoliang.tasks365.task.AndroidCalendar;
 import leoliang.tasks365.task.SingleDayTaskQuery;
 import leoliang.tasks365.task.Task;
 import android.app.DatePickerDialog;
@@ -86,7 +87,7 @@ public class TaskListActivity extends GDActivity {
         });
 
         // TODO: move it to background service
-        taskManager = new TaskManager(this, application.getCalendarId());
+        taskManager = new TaskManager(this, application);
         taskManager.dealWithTasksInThePast();
         // end of TODO
     }
@@ -120,7 +121,7 @@ public class TaskListActivity extends GDActivity {
         Task prevItem = null;
         Calendar prevItemTime;
         if (targetPosition == 0) {
-            prevItemTime = Task.beginOfToday();
+            prevItemTime = AndroidCalendar.beginOfToday();
         } else {
             prevItem = adapter.getItem(targetPosition - 1);
             prevItemTime = getTaskStartTime(prevItem);
@@ -130,7 +131,7 @@ public class TaskListActivity extends GDActivity {
         if (targetPosition < adapter.getCount()) {
             nextItemTime = getTaskStartTime(adapter.getItem(targetPosition));
         } else {
-            nextItemTime = Task.endOfToday();
+            nextItemTime = AndroidCalendar.endOfToday();
         }
 
         if (prevItemTime.equals(nextItemTime)) {
@@ -148,7 +149,7 @@ public class TaskListActivity extends GDActivity {
 
     private Calendar getTaskStartTime(Task task) {
         if (task.isDone) {
-            return Task.endOfToday();
+            return AndroidCalendar.endOfToday();
         }
         return task.startTime;
     }

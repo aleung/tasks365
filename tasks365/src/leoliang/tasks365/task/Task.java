@@ -58,24 +58,6 @@ public class Task {
     public Calendar due = null;
 
 
-    public static Calendar endOfToday() {
-        Calendar time = Calendar.getInstance();
-        time.set(Calendar.HOUR_OF_DAY, 23);
-        time.set(Calendar.MINUTE, 59);
-        time.set(Calendar.SECOND, 0);
-        time.set(Calendar.MILLISECOND, 0);
-        return time;
-    }
-
-    public static Calendar beginOfToday() {
-        Calendar time = Calendar.getInstance();
-        time.set(Calendar.HOUR_OF_DAY, 0);
-        time.set(Calendar.MINUTE, 0);
-        time.set(Calendar.SECOND, 0);
-        time.set(Calendar.MILLISECOND, 0);
-        return time;
-    }
-
     public static String formatDate(Date date) {
         return dateFormatter.format(date);
     }
@@ -165,7 +147,7 @@ public class Task {
      * Schedule as an all day even in today.
      */
     public void scheduleToday() {
-        startTime = endOfToday();
+        startTime = AndroidCalendar.endOfToday();
         endTime = (Calendar) startTime.clone();
         isAllDay = true;
     }
