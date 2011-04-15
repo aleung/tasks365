@@ -94,7 +94,7 @@ public class TaskListActivity extends GDActivity {
         });
 
         // TODO: move it to background service
-        taskManager = new TaskManager(this, application.getCalendarId());
+        taskManager = new TaskManager(this, application);
         taskManager.dealWithTasksInThePast();
         // end of TODO
     }

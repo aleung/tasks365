@@ -9,6 +9,7 @@ public class MyApplication extends GDApplication {
 
     private static final String PREFERENCES_FILE_NAME = "default";
     private static final String PREFERENCE_CALENDAR_ID = "calendarId";
+    private static final String PREFERENCE_LAST_RUN_TIME = "lastRunTime";
 
     /**
      * Creates a new instance of <code>MyApplication</code>.
@@ -37,6 +38,14 @@ public class MyApplication extends GDApplication {
      */
     public void setCalendarId(long id) {
         getPreferences().edit().putLong(PREFERENCE_CALENDAR_ID, id).commit();
+    }
+
+    public long getLastRunTime() {
+        return getPreferences().getLong(PREFERENCE_LAST_RUN_TIME, System.currentTimeMillis());
+    }
+
+    public void setLastRunTime(long time) {
+        getPreferences().edit().putLong(PREFERENCE_LAST_RUN_TIME, time).commit();
     }
 
     @Override

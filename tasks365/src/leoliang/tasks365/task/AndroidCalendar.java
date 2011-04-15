@@ -94,6 +94,24 @@ public class AndroidCalendar {
         // if (calendarUriBase == null) { throw new Exception(); }
     }
 
+    public static java.util.Calendar beginOfToday() {
+        java.util.Calendar time = java.util.Calendar.getInstance();
+        time.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        time.set(java.util.Calendar.MINUTE, 0);
+        time.set(java.util.Calendar.SECOND, 0);
+        time.set(java.util.Calendar.MILLISECOND, 0);
+        return time;
+    }
+
+    public static java.util.Calendar endOfToday() {
+        java.util.Calendar time = java.util.Calendar.getInstance();
+        time.set(java.util.Calendar.HOUR_OF_DAY, 23);
+        time.set(java.util.Calendar.MINUTE, 59);
+        time.set(java.util.Calendar.SECOND, 0);
+        time.set(java.util.Calendar.MILLISECOND, 0);
+        return time;
+    }
+
     /**
      * Read the task at cursor current location.
      * 
@@ -245,50 +263,6 @@ public class AndroidCalendar {
     }
 
     /**
-     * Query non all day events which were scheduled in passed days (before 0:00 of today in system's time zone).
-     * 
-     * @param calendarId
-     * @return
-     */
-    public Cursor queryNonAllDayEventsInPastDays(long calendarId) {
-        return queryEventsInPastDays(calendarId, false);
-    }
-
-    /**
-     * Query all day events which were scheduled in passed days.
-     * 
-     * @param calendarId
-     * @return
-     */
-    public Cursor queryAllDayEventsInPastDays(long calendarId) {
-        return queryEventsInPastDays(calendarId, true);
-    }
-
-    private Cursor queryEventsInPastDays(long calendarId, boolean isAllDay) {
-        java.util.Calendar beforeDate = java.util.Calendar.getInstance();
-        if (isAllDay) {
-            beforeDate.setTimeZone(TimeZone.getTimeZone("UMT"));
-        }
-        beforeDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        beforeDate.set(java.util.Calendar.MINUTE, 0);
-        beforeDate.set(java.util.Calendar.SECOND, 0);
-        beforeDate.set(java.util.Calendar.MILLISECOND, 0);
-
-        String[] whereArgs = new String[4];
-        whereArgs[0] = String.valueOf(calendarId);
-        whereArgs[1] = String.valueOf(beforeDate.getTimeInMillis());
-        whereArgs[2] = whereArgs[1];
-        whereArgs[3] = isAllDay ? "1" : "0";
-
-        Log.v(LOG_TAG,
-                "Query " + (isAllDay ? "all day" : "non all day") + " events before "
-                        + Task.formatDate(beforeDate.getTime()));
-        Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_COLUMNS,
-                PASSED_EVENT_SELECTION_CRITERIA, whereArgs, TASK_SORT_ORDER);
-        return cursor;
-    }
-
-    /**
      * Determines if it's a pre 2.1 or a 2.2 calendar Uri, and returns the Uri
      */
     private String getCalendarUriBase() {
@@ -321,4 +295,5 @@ public class AndroidCalendar {
 
         return calendarUriBase;
     }
+
 }

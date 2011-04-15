@@ -58,7 +58,7 @@ public class TaskOrderMover {
         Task prevItem = null;
         Calendar prevItemTime;
         if (prevItemPosition < 0) {
-            prevItemTime = Task.beginOfToday();
+            prevItemTime = AndroidCalendar.beginOfToday();
         } else {
             prevItem = (Task) list.getItem(prevItemPosition);
             prevItemTime = getTaskStartTime(prevItem);
@@ -71,7 +71,7 @@ public class TaskOrderMover {
             nextItem = (Task) list.getItem(nextItemPosition);
             nextItemTime = getTaskStartTime(nextItem);
         } else {
-            nextItemTime = Task.endOfToday();
+            nextItemTime = AndroidCalendar.endOfToday();
         }
 
         Log.v(LOG_TAG,
@@ -101,7 +101,7 @@ public class TaskOrderMover {
 
     private Calendar getTaskStartTime(Task task) {
         if (task.isDone) {
-            return Task.endOfToday();
+            return AndroidCalendar.endOfToday();
         }
         return task.startTime;
     }
