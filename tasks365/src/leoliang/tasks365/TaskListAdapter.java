@@ -104,8 +104,8 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
         if (task.isNew) {
             tags += "[new]";
         }
-        if (task.isRecurrentEvent) {
-            tags += "[repeat]";
+        if (task.isPinned()) {
+            tags += "[pinned]";
         }
         viewHolder.tags.setText(tags);
         if (task.isStarred) {

@@ -41,7 +41,6 @@ public class Task {
     public Calendar startTime = Calendar.getInstance();
     public Calendar endTime = Calendar.getInstance();
     public boolean isAllDay = true;
-    public boolean isRecurrentEvent = false; // read only field
 
     /** pure title, without tags */
     public String title;
@@ -57,6 +56,8 @@ public class Task {
     // extra fields stored in JSON
     public Calendar due = null;
 
+    // read only field
+    boolean isRecurrentEvent = false;
 
     public static String formatDate(Date date) {
         return dateFormatter.format(date);
@@ -156,8 +157,9 @@ public class Task {
     public String toString() {
         StringBuilder s = new StringBuilder();
         Formatter formatter = new Formatter(s);
-        formatter.format("{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%s, endTime:%s}", id, calendarId,
-                title, isAllDay, formatDate(startTime), formatDate(endTime));
+        formatter.format(
+                "{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%s, endTime:%s, isPinned:%b, isDone:%b}", id,
+                calendarId, title, isAllDay, formatDate(startTime), formatDate(endTime), isPinned(), isDone);
         return s.toString();
     }
 
@@ -248,6 +250,17 @@ public class Task {
         }
         // TODO Auto-generated method stub
         return false;
+    }
+
+    /**
+     * Pinned task could not be scheduled nor done.
+     * 
+     * The task whose backed calendar event is a recurrent event, is pinned.
+     * 
+     * @return
+     */
+    public boolean isPinned() {
+        return isRecurrentEvent;
     }
 
 }

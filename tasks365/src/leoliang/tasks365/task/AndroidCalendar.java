@@ -122,6 +122,8 @@ public class AndroidCalendar {
         Task task = new Task();
         task.id = c.getLong(c.getColumnIndexOrThrow(Calendar.Events._ID));
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
+        task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
+        task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
 
         int columnDtStart = c.getColumnIndex(Calendar.Events.DTSTART);
         if (columnDtStart != -1) {
@@ -144,15 +146,12 @@ public class AndroidCalendar {
             task.endTime = (java.util.Calendar) task.startTime.clone();
         }
 
-        Log.v(LOG_TAG,
-                "Read task. dtStart=" + Task.formatDate(task.startTime) + ", dtEnd=" + Task.formatDate(task.endTime));
-
-        task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
         String recurrenceRule = c.getString(c.getColumnIndexOrThrow(Calendar.Events.RRULE));
-        task.isRecurrentEvent = ((recurrenceRule != null) && (recurrenceRule.length() == 0));
-        task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
+        task.isRecurrentEvent = ((recurrenceRule != null) && (recurrenceRule.length() > 0));
+
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
         task.setDescriptionWithExtraData(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
+
         Log.v(LOG_TAG, "Read task. " + task);
         return task;
     }
@@ -174,29 +173,31 @@ public class AndroidCalendar {
     public void updateTask(Task task) {
         Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, task.id);
         ContentValues values = createContentValues(task);
-        Log.d(LOG_TAG, "Update task: " + task);
+        Log.d(LOG_TAG, "Update task " + task.id + ": " + values);
         context.getContentResolver().update(uri, values, null, null);
     }
 
     private ContentValues createContentValues(Task task) {
         ContentValues values = new ContentValues();
         values.put(Calendar.Events.TITLE, task.getTitleWithTags());
-        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
-        if (task.isAllDay) {
-            values.put(Calendar.Events.ALL_DAY, 1);
-            java.util.Calendar time = (java.util.Calendar) task.startTime.clone();
-            time.setTimeZone(TimeZone.getTimeZone("UMT"));
-            time.set(java.util.Calendar.HOUR_OF_DAY, 0);
-            time.set(java.util.Calendar.MINUTE, 0);
-            time.set(java.util.Calendar.SECOND, 0);
-            time.set(java.util.Calendar.MILLISECOND, 0);
-            values.put(Calendar.Events.DTSTART, time.getTimeInMillis());
-            time.add(java.util.Calendar.DAY_OF_MONTH, 1);
-            values.put(Calendar.Events.DTEND, time.getTimeInMillis());
-        } else {
-            values.put(Calendar.Events.ALL_DAY, 0);
-            values.put(Calendar.Events.DTSTART, task.startTime.getTimeInMillis());
-            values.put(Calendar.Events.DTEND, task.endTime.getTimeInMillis());
+        if (!task.isPinned()) {
+            values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
+            if (task.isAllDay) {
+                values.put(Calendar.Events.ALL_DAY, 1);
+                java.util.Calendar time = (java.util.Calendar) task.startTime.clone();
+                time.setTimeZone(TimeZone.getTimeZone("UMT"));
+                time.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                time.set(java.util.Calendar.MINUTE, 0);
+                time.set(java.util.Calendar.SECOND, 0);
+                time.set(java.util.Calendar.MILLISECOND, 0);
+                values.put(Calendar.Events.DTSTART, time.getTimeInMillis());
+                time.add(java.util.Calendar.DAY_OF_MONTH, 1);
+                values.put(Calendar.Events.DTEND, time.getTimeInMillis());
+            } else {
+                values.put(Calendar.Events.ALL_DAY, 0);
+                values.put(Calendar.Events.DTSTART, task.startTime.getTimeInMillis());
+                values.put(Calendar.Events.DTEND, task.endTime.getTimeInMillis());
+            }
         }
         return values;
     }

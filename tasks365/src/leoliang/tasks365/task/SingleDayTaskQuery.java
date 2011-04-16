@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import leoliang.android.util.CursorHelper;
 import android.app.Activity;
 import android.database.ContentObserver;
 import android.database.Cursor;
@@ -64,6 +65,7 @@ public class SingleDayTaskQuery {
     }
 
     private void loadTasks(Cursor cursor) {
+        Log.v(LOG_TAG, "Load tasks: " + CursorHelper.getResultSet(cursor));
         if (!cursor.moveToFirst()) {
             Log.v(LOG_TAG, "Cursor is empty");
             return;
