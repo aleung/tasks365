@@ -82,11 +82,9 @@ public class TaskListActivity extends GDActivity {
         listView.setDropListener(new DropListener() {
             @Override
             public void drop(int from, int to) {
-                if (from == to) {
-                    return;
-                }
                 try {
                     new TaskOrderMover(adapter, taskManager).moveTaskToPosition(from, to);
+                    adapter.notifyDataSetChanged();
                 } catch (MoveNotAllowException e) {
                     Toast.makeText(TaskListActivity.this, R.string.done_task_no_move, Toast.LENGTH_LONG);
                 }
