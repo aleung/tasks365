@@ -3,6 +3,7 @@ package leoliang.tasks365.task;
 import java.util.Calendar;
 
 import leoliang.tasks365.MyApplication;
+import leoliang.tasks365.task.AndroidCalendar.OperationFailure;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
@@ -21,12 +22,22 @@ public class TaskManager {
 
     public void markTaskDone(Task task) {
         task.isDone = true;
-        calendar.updateTask(task);
+        try {
+            calendar.updateTask(task);
+        } catch (OperationFailure e) {
+            // TODO Auto-generated catch block
+            Log.w(LOG_TAG, e);
+        }
     }
 
     public void markTaskUndone(Task task) {
         task.isDone = false;
-        calendar.updateTask(task);
+        try {
+            calendar.updateTask(task);
+        } catch (OperationFailure e) {
+            // TODO Auto-generated catch block
+            Log.w(LOG_TAG, e);
+        }
     }
 
     public void dealWithTasksInThePast() {
@@ -68,7 +79,12 @@ public class TaskManager {
 
     private void moveTaskToToday(Task task) {
         task.scheduleToday();
-        calendar.updateTask(task);
+        try {
+            calendar.updateTask(task);
+        } catch (OperationFailure e) {
+            // TODO Auto-generated catch block
+            Log.w(LOG_TAG, e);
+        }
     }
 
     /**
@@ -92,16 +108,31 @@ public class TaskManager {
     }
 
     public void saveTask(Task task) {
-        calendar.updateTask(task);
+        try {
+            calendar.updateTask(task);
+        } catch (OperationFailure e) {
+            // TODO Auto-generated catch block
+            Log.w(LOG_TAG, e);
+        }
     }
 
     public void starTask(Task task) {
         task.isStarred = true;
-        calendar.updateTask(task);
+        try {
+            calendar.updateTask(task);
+        } catch (OperationFailure e) {
+            // TODO Auto-generated catch block
+            Log.w(LOG_TAG, e);
+        }
     }
 
     public void unstarTask(Task task) {
         task.isStarred = false;
-        calendar.updateTask(task);
+        try {
+            calendar.updateTask(task);
+        } catch (OperationFailure e) {
+            // TODO Auto-generated catch block
+            Log.w(LOG_TAG, e);
+        }
     }
 }

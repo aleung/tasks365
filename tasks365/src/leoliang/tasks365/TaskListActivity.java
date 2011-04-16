@@ -164,6 +164,8 @@ public class TaskListActivity extends GDActivity {
                     taskManager.unstarTask(task);
                     break;
                 }
+                adapter.notifyDataSetChanged();
+                // TODO: remove tasks which isn't scheduled in today
             }
         });
         bar.show(view);

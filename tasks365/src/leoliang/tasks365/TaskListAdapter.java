@@ -3,10 +3,12 @@ package leoliang.tasks365;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 
 import leoliang.tasks365.task.QueryResultObserver;
 import leoliang.tasks365.task.Task;
+import leoliang.tasks365.task.TaskComparator;
 import android.content.Context;
 import android.graphics.Paint;
 import android.view.LayoutInflater;
@@ -158,6 +160,14 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
     @Override
     public void onInvalidated() {
         notifyDataSetInvalidated();
+    }
+
+    @Override
+    public void notifyDataSetChanged() {
+        if (tasks != null) {
+            Collections.sort(tasks, new TaskComparator());
+        }
+        super.notifyDataSetChanged();
     }
 
     /**

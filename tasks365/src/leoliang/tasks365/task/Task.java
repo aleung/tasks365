@@ -157,9 +157,10 @@ public class Task {
     public String toString() {
         StringBuilder s = new StringBuilder();
         Formatter formatter = new Formatter(s);
-        formatter.format(
-                "{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%s, endTime:%s, isPinned:%b, isDone:%b}", id,
-                calendarId, title, isAllDay, formatDate(startTime), formatDate(endTime), isPinned(), isDone);
+        formatter
+                .format("{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%s, endTime:%s, isPinned:%b, isDone:%b, isStarred=%b}",
+                        id, calendarId, title, isAllDay, formatDate(startTime), formatDate(endTime), isPinned(),
+                        isDone, isStarred);
         return s.toString();
     }
 

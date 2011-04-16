@@ -38,9 +38,16 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class AndroidCalendar {
+
+    public class OperationFailure extends Exception {
+        public OperationFailure(String message) {
+            super(message);
+        }
+    }
 
     private static final String LOG_TAG = "tasks365";
 
@@ -63,7 +70,7 @@ public class AndroidCalendar {
     /**
      * What columns are in the result of event query methods.
      */
-    private static final String[] INSTANCE_COLUMNS = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
+    private static final String[] INSTANCE_COLUMNS = { Calendar.Instances.EVENT_ID, Calendar.Events.CALENDAR_ID,
             Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Instances.START_DAY,
             Calendar.Instances.END_DAY, Calendar.Instances.START_MINUTE, Calendar.Instances.END_MINUTE,
             Calendar.Events.ALL_DAY, Calendar.Events.RRULE };
@@ -120,10 +127,17 @@ public class AndroidCalendar {
      */
     public static Task readTask(Cursor c) {
         Task task = new Task();
-        task.id = c.getLong(c.getColumnIndexOrThrow(Calendar.Events._ID));
+
+        int columnEventId = c.getColumnIndex(Calendar.Instances.EVENT_ID);
+        if (columnEventId == -1) {
+            columnEventId = c.getColumnIndexOrThrow(Calendar.Events._ID);
+        }
+        task.id = c.getLong(columnEventId);
+        
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
+        task.isRecurrentEvent = !TextUtils.isEmpty(c.getString(c.getColumnIndexOrThrow(Calendar.Events.RRULE)));
 
         int columnDtStart = c.getColumnIndex(Calendar.Events.DTSTART);
         if (columnDtStart != -1) {
@@ -146,9 +160,6 @@ public class AndroidCalendar {
             task.endTime = (java.util.Calendar) task.startTime.clone();
         }
 
-        String recurrenceRule = c.getString(c.getColumnIndexOrThrow(Calendar.Events.RRULE));
-        task.isRecurrentEvent = ((recurrenceRule != null) && (recurrenceRule.length() > 0));
-
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
         task.setDescriptionWithExtraData(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
 
@@ -169,12 +180,16 @@ public class AndroidCalendar {
 
     /**
      * @param task
+     * @throws OperationFailure
      */
-    public void updateTask(Task task) {
+    public void updateTask(Task task) throws OperationFailure {
         Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, task.id);
         ContentValues values = createContentValues(task);
         Log.d(LOG_TAG, "Update task " + task.id + ": " + values);
-        context.getContentResolver().update(uri, values, null, null);
+        int numUpdatedRows = context.getContentResolver().update(uri, values, null, null);
+        if (numUpdatedRows != 1) {
+            throw new OperationFailure("Update task failed.");
+        }
     }
 
     private ContentValues createContentValues(Task task) {
