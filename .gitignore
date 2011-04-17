@@ -17,3 +17,7 @@
 # other SCM
 .hg
 .svn
+
+# backup files
+*.orig
+*.bak

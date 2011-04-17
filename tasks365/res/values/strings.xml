@@ -3,6 +3,7 @@
     <string name="app_name">tasks365</string>
     <string name="add_task">Add Task</string>
     <string name="calendars">Calendars</string>
+    <string name="done_task_no_move">Done task is always at the end</string>
     <string name="edit_task">Edit</string>
     <string name="mark_task_done">Done</string>
     <string name="mark_task_undone">Undone</string>

@@ -1,10 +1,9 @@
 package leoliang.tasks365.task;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
+import leoliang.android.util.CursorHelper;
 import android.app.Activity;
 import android.database.ContentObserver;
 import android.database.Cursor;
@@ -48,22 +47,34 @@ public class SingleDayTaskQuery {
      */
     public void query(java.util.Calendar date) {
         MyDataSetObserver myDataSetObserver = new MyDataSetObserver();
+        ChangeObserver changeObserver = new ChangeObserver();
         AndroidCalendar calenar = new AndroidCalendar(activity);
 
         eventifyTaskCursor = calenar.queryNonAllDayEventsByDate(calendarId, date);
-        eventifyTaskCursor.registerContentObserver(new ChangeObserver(eventifyTaskCursor));
+        eventifyTaskCursor.registerContentObserver(changeObserver);
         eventifyTaskCursor.registerDataSetObserver(myDataSetObserver);
         activity.startManagingCursor(eventifyTaskCursor);
 
         normalTaskCursor = calenar.queryAllDayEventsByDate(calendarId, date);
-        normalTaskCursor.registerContentObserver(new ChangeObserver(normalTaskCursor));
+        normalTaskCursor.registerContentObserver(changeObserver);
         normalTaskCursor.registerDataSetObserver(myDataSetObserver);
         activity.startManagingCursor(normalTaskCursor);
 
         loadTasks();
     }
 
+    private void requery() {
+        Log.v(LOG_TAG, "Requery on cursors");
+        if (!eventifyTaskCursor.isClosed()) {
+            eventifyTaskCursor.requery();
+        }
+        if (!normalTaskCursor.isClosed()) {
+            normalTaskCursor.requery();
+        }
+    }
+
     private void loadTasks(Cursor cursor) {
+        Log.v(LOG_TAG, "Load tasks: " + CursorHelper.getResultSet(cursor));
         if (!cursor.moveToFirst()) {
             Log.v(LOG_TAG, "Cursor is empty");
             return;
@@ -78,68 +89,110 @@ public class SingleDayTaskQuery {
         tasks.clear();
         loadTasks(normalTaskCursor);
         loadTasks(eventifyTaskCursor);
-        Collections.sort(tasks, new TaskComparator());
-        Log.v(LOG_TAG, "Loaded " + tasks.size() + " tasks.");
-        observer.onResultChanged(Collections.unmodifiableList(tasks));
+        Log.v(LOG_TAG, "SingleDayTaskQuery: Loaded " + tasks.size() + " tasks.");
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                observer.onResultChanged(tasks);
+            }
+        });
     }
 
     private class MyDataSetObserver extends DataSetObserver {
+        private DelayAction action;
+
+        public MyDataSetObserver() {
+            action = new DelayAction(new Runnable() {
+                @Override
+                public void run() {
+                    loadTasks();
+                }
+            }, 500, 2);
+        }
+
         @Override
         public void onChanged() {
-            Log.v(LOG_TAG, "Cursor data set is changed");
-            loadTasks();
+            Log.v(LOG_TAG, "Data set is changed");
+            action.trigger();
         }
 
         @Override
         public void onInvalidated() {
             Log.v(LOG_TAG, "Data set is invalidated");
+            action.cancel();
             observer.onInvalidated();
         }
     }
 
     private class ChangeObserver extends ContentObserver {
-        Cursor cursor;
+        private DelayAction action;
 
-        public ChangeObserver(Cursor cursor) {
+        public ChangeObserver() {
             super(new Handler());
-            this.cursor = cursor;
+            action = new DelayAction(new Runnable() {
+                @Override
+                public void run() {
+                    requery();
+                }
+            }, 1000, 65536);
         }
 
         @Override
         public void onChange(boolean selfChange) {
             Log.v(LOG_TAG, "Content changed. Is self change:" + selfChange);
-            if (!cursor.isClosed()) {
-                Log.v(LOG_TAG, "Auto requerying due to content is changed");
-                // TODO: set a flag, delay 10 seconds before requery
-                cursor.requery();
+            action.trigger();
+        }
+    }
+
+}
+
+/**
+ * Schedule one-shot action for execution. The action will be executed when it is triggered up to threshold times, or
+ * after the specified delay.
+ */
+class DelayAction {
+    private long maxDelayMillis;
+    private int triggerThreshold;
+    private Runnable action;
+    private int triggerCount;
+    private Thread timer;
+
+    public DelayAction(Runnable action, long maxDelayMillis, int triggerThreshold) {
+        this.action = action;
+        this.maxDelayMillis = maxDelayMillis;
+        this.triggerThreshold = triggerThreshold;
+    }
+
+    public synchronized void trigger() {
+        triggerCount++;
+        if (triggerCount >= triggerThreshold) {
+            new Thread(action).start();
+            cancel();
+        } else {
+            if (timer == null) {
+                timer = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(maxDelayMillis);
+                        } catch (InterruptedException e) {
+                            return;
+                        }
+                        triggerCount = 0;
+                        timer = null;
+                        action.run();
+                    }
+                });
+                timer.start();
             }
         }
     }
 
-    /**
-     * Sort tasks by status and startTime. Tasks of different status order in: normal, new, done.
-     */
-    private class TaskComparator implements Comparator<Task> {
-
-        @Override
-        public int compare(Task task1, Task task2) {
-            if (task1.isDone != task2.isDone) {
-                if (task1.isDone) {
-                    return 1;
-                }
-                return -1;
-            }
-
-            if (task1.isNew != task2.isNew) {
-                if (task1.isNew) {
-                    return 1;
-                }
-                return -1;
-            }
-
-            return task1.startTime.compareTo(task2.startTime);
+    public synchronized void cancel() {
+        triggerCount = 0;
+        if (timer != null) {
+            timer.interrupt();
+            timer = null;
         }
-
     }
-
 }

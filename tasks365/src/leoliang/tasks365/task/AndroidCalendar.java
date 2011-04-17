@@ -38,17 +38,41 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 public class AndroidCalendar {
 
+    public class OperationFailure extends Exception {
+        public OperationFailure(String message) {
+            super(message);
+        }
+    }
+
     private static final String LOG_TAG = "tasks365";
+
+    /**
+     * Value to add to the day number find the Julian Day number.
+     * 
+     * This is the Julian Day number for 1/1/1970.
+     * 
+     * @see "http://www.hermetic.ch/cal_stud/jdn.htm"
+     */
+    private static final int EPOCH_UNIX_ERA_DAY = 2440588;
 
     /**
      * What columns are in the result of event query methods.
      */
     private static final String[] TASK_COLUMNS = { Calendar.Events._ID, Calendar.Events.CALENDAR_ID,
             Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Events.DTSTART, Calendar.Events.DTEND,
+            Calendar.Events.ALL_DAY, Calendar.Events.RRULE };
+
+    /**
+     * What columns are in the result of event query methods.
+     */
+    private static final String[] INSTANCE_COLUMNS = { Calendar.Instances.EVENT_ID, Calendar.Events.CALENDAR_ID,
+            Calendar.Events.TITLE, Calendar.Events.DESCRIPTION, Calendar.Instances.START_DAY,
+            Calendar.Instances.END_DAY, Calendar.Instances.START_MINUTE, Calendar.Instances.END_MINUTE,
             Calendar.Events.ALL_DAY, Calendar.Events.RRULE };
 
     /**
@@ -103,18 +127,42 @@ public class AndroidCalendar {
      */
     public static Task readTask(Cursor c) {
         Task task = new Task();
-        task.id = c.getLong(c.getColumnIndexOrThrow(Calendar.Events._ID));
+
+        int columnEventId = c.getColumnIndex(Calendar.Instances.EVENT_ID);
+        if (columnEventId == -1) {
+            columnEventId = c.getColumnIndexOrThrow(Calendar.Events._ID);
+        }
+        task.id = c.getLong(columnEventId);
+        
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
-        task.startTime.setTimeInMillis(c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTSTART)));
-        task.endTime.setTimeInMillis(c.getLong(c.getColumnIndexOrThrow(Calendar.Events.DTEND)));
-        Log.v(LOG_TAG,
-                "Read task. dtStart=" + Task.formatDate(task.startTime) + ", dtEnd=" + Task.formatDate(task.endTime));
-        task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
-        String recurrenceRule = c.getString(c.getColumnIndexOrThrow(Calendar.Events.RRULE));
-        task.isRecurrentEvent = ((recurrenceRule != null) && (recurrenceRule.length() == 0));
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
+        task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
+        task.isRecurrentEvent = !TextUtils.isEmpty(c.getString(c.getColumnIndexOrThrow(Calendar.Events.RRULE)));
+
+        int columnDtStart = c.getColumnIndex(Calendar.Events.DTSTART);
+        if (columnDtStart != -1) {
+            task.startTime.setTimeInMillis(c.getLong(columnDtStart));
+        }
+
+        int columnDtEnd = c.getColumnIndex(Calendar.Events.DTEND);
+        if (columnDtEnd != -1) {
+            task.endTime.setTimeInMillis(c.getLong(columnDtEnd));
+        }
+
+        int columnStartDay = c.getColumnIndex(Calendar.Instances.START_DAY);
+        if (columnStartDay != -1) {
+            int daysSinceEpoch = c.getInt(c.getColumnIndexOrThrow(Calendar.Instances.START_DAY));
+            int minutes = c.getInt(c.getColumnIndexOrThrow(Calendar.Instances.START_MINUTE));
+            task.startTime.set(1970, 0, 1, 0, 0, 0);
+            task.startTime.add(java.util.Calendar.DAY_OF_YEAR, daysSinceEpoch - EPOCH_UNIX_ERA_DAY);
+            task.startTime.add(java.util.Calendar.MINUTE, minutes);
+            // TODO: set end time
+            task.endTime = (java.util.Calendar) task.startTime.clone();
+        }
+
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
         task.setDescriptionWithExtraData(c.getString(c.getColumnIndexOrThrow(Calendar.Events.DESCRIPTION)));
+
         Log.v(LOG_TAG, "Read task. " + task);
         return task;
     }
@@ -132,33 +180,39 @@ public class AndroidCalendar {
 
     /**
      * @param task
+     * @throws OperationFailure
      */
-    public void updateTask(Task task) {
+    public void updateTask(Task task) throws OperationFailure {
         Uri uri = ContentUris.withAppendedId(Calendar.Events.CONTENT_URI, task.id);
         ContentValues values = createContentValues(task);
-        Log.d(LOG_TAG, "Update task: " + task);
-        context.getContentResolver().update(uri, values, null, null);
+        Log.d(LOG_TAG, "Update task " + task.id + ": " + values);
+        int numUpdatedRows = context.getContentResolver().update(uri, values, null, null);
+        if (numUpdatedRows != 1) {
+            throw new OperationFailure("Update task failed.");
+        }
     }
 
     private ContentValues createContentValues(Task task) {
         ContentValues values = new ContentValues();
         values.put(Calendar.Events.TITLE, task.getTitleWithTags());
-        values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
-        if (task.isAllDay) {
-            values.put(Calendar.Events.ALL_DAY, 1);
-            java.util.Calendar time = (java.util.Calendar) task.startTime.clone();
-            time.setTimeZone(TimeZone.getTimeZone("UMT"));
-            time.set(java.util.Calendar.HOUR_OF_DAY, 0);
-            time.set(java.util.Calendar.MINUTE, 0);
-            time.set(java.util.Calendar.SECOND, 0);
-            time.set(java.util.Calendar.MILLISECOND, 0);
-            values.put(Calendar.Events.DTSTART, time.getTimeInMillis());
-            time.add(java.util.Calendar.DAY_OF_MONTH, 1);
-            values.put(Calendar.Events.DTEND, time.getTimeInMillis());
-        } else {
-            values.put(Calendar.Events.ALL_DAY, 0);
-            values.put(Calendar.Events.DTSTART, task.startTime.getTimeInMillis());
-            values.put(Calendar.Events.DTEND, task.endTime.getTimeInMillis());
+        if (!task.isPinned()) {
+            values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
+            if (task.isAllDay) {
+                values.put(Calendar.Events.ALL_DAY, 1);
+                java.util.Calendar time = (java.util.Calendar) task.startTime.clone();
+                time.setTimeZone(TimeZone.getTimeZone("UMT"));
+                time.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                time.set(java.util.Calendar.MINUTE, 0);
+                time.set(java.util.Calendar.SECOND, 0);
+                time.set(java.util.Calendar.MILLISECOND, 0);
+                values.put(Calendar.Events.DTSTART, time.getTimeInMillis());
+                time.add(java.util.Calendar.DAY_OF_MONTH, 1);
+                values.put(Calendar.Events.DTEND, time.getTimeInMillis());
+            } else {
+                values.put(Calendar.Events.ALL_DAY, 0);
+                values.put(Calendar.Events.DTSTART, task.startTime.getTimeInMillis());
+                values.put(Calendar.Events.DTEND, task.endTime.getTimeInMillis());
+            }
         }
         return values;
     }
@@ -193,7 +247,8 @@ public class AndroidCalendar {
         to.add(java.util.Calendar.DAY_OF_MONTH, 1);
 
         Log.v(LOG_TAG, "Query non all day events in [" + Task.formatDate(from) + ", " + Task.formatDate(to) + ")");
-        Cursor cursor = Calendar.Instances.query(context.getContentResolver(), TASK_COLUMNS, from.getTimeInMillis(),
+        Cursor cursor = Calendar.Instances.query(context.getContentResolver(), INSTANCE_COLUMNS,
+                from.getTimeInMillis(),
                 to.getTimeInMillis(), calendarId);
         return cursor;
     }
