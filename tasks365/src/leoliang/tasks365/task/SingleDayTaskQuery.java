@@ -64,6 +64,7 @@ public class SingleDayTaskQuery {
     }
 
     private void requery() {
+        Log.v(LOG_TAG, "Requery on cursors");
         if (!eventifyTaskCursor.isClosed()) {
             eventifyTaskCursor.requery();
         }
@@ -89,33 +90,109 @@ public class SingleDayTaskQuery {
         loadTasks(normalTaskCursor);
         loadTasks(eventifyTaskCursor);
         Log.v(LOG_TAG, "SingleDayTaskQuery: Loaded " + tasks.size() + " tasks.");
-        observer.onResultChanged(tasks);
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                observer.onResultChanged(tasks);
+            }
+        });
     }
 
     private class MyDataSetObserver extends DataSetObserver {
+        private DelayAction action;
+
+        public MyDataSetObserver() {
+            action = new DelayAction(new Runnable() {
+                @Override
+                public void run() {
+                    loadTasks();
+                }
+            }, 500, 2);
+        }
+
         @Override
         public void onChanged() {
-            loadTasks();
+            Log.v(LOG_TAG, "Data set is changed");
+            action.trigger();
         }
 
         @Override
         public void onInvalidated() {
             Log.v(LOG_TAG, "Data set is invalidated");
+            action.cancel();
             observer.onInvalidated();
         }
     }
 
     private class ChangeObserver extends ContentObserver {
+        private DelayAction action;
 
         public ChangeObserver() {
             super(new Handler());
+            action = new DelayAction(new Runnable() {
+                @Override
+                public void run() {
+                    requery();
+                }
+            }, 1000, 65536);
         }
 
         @Override
         public void onChange(boolean selfChange) {
             Log.v(LOG_TAG, "Content changed. Is self change:" + selfChange);
-            requery();
+            action.trigger();
         }
     }
 
+}
+
+/**
+ * Schedule one-shot action for execution. The action will be executed when it is triggered up to threshold times, or
+ * after the specified delay.
+ */
+class DelayAction {
+    private long maxDelayMillis;
+    private int triggerThreshold;
+    private Runnable action;
+    private int triggerCount;
+    private Thread timer;
+
+    public DelayAction(Runnable action, long maxDelayMillis, int triggerThreshold) {
+        this.action = action;
+        this.maxDelayMillis = maxDelayMillis;
+        this.triggerThreshold = triggerThreshold;
+    }
+
+    public synchronized void trigger() {
+        triggerCount++;
+        if (triggerCount >= triggerThreshold) {
+            new Thread(action).start();
+            cancel();
+        } else {
+            if (timer == null) {
+                timer = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(maxDelayMillis);
+                        } catch (InterruptedException e) {
+                            return;
+                        }
+                        triggerCount = 0;
+                        timer = null;
+                        action.run();
+                    }
+                });
+                timer.start();
+            }
+        }
+    }
+
+    public synchronized void cancel() {
+        triggerCount = 0;
+        if (timer != null) {
+            timer.interrupt();
+            timer = null;
+        }
+    }
 }
