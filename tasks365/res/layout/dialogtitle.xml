@@ -8,6 +8,6 @@
 	  android:layout_height="wrap_content"
 	  android:gravity="center_vertical"
 	  android:id="@+id/dateSliderTitleText" android:textStyle="bold"
-	  android:textColor="#FFFFFF" android:text="@string/dateSliderTitle">
+	  android:textColor="#FFFFFF">
 	</TextView>
 </LinearLayout>

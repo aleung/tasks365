@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2011 Daniel Berndt - Codeus Ltd  -  DateSlider
  * 
- * DateSlider which allows for selecting of a date including a time 
+ * DateSlider which allows for selecting of a date including a time
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.googlecode.android.widgets.DateSlider;
 
 import java.util.Calendar;
 
+import leoliang.tasks365.R;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
@@ -43,8 +44,8 @@ public class DateTimeSlider extends DateSlider {
 	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		// this needs to be called before everything else to set up the main layout of the DateSlider  
-		super.onCreate(savedInstanceState);		
+		// this needs to be called before everything else to set up the main layout of the DateSlider
+		super.onCreate(savedInstanceState);
 		
 		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		LayoutParams lp = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT);
@@ -179,7 +180,7 @@ public class DateTimeSlider extends DateSlider {
 		 * override this method to set the inital TimeObject to a multiple of MINUTEINTERVAL
 		 */
 		@Override
-		public TimeObject getElem(long time) { 
+		public TimeObject getElem(long time) {
 			Calendar c = Calendar.getInstance();
 			c.setTimeInMillis(time);
 			c.set(Calendar.MINUTE, c.get(Calendar.MINUTE)/MINUTEINTERVAL*MINUTEINTERVAL);
@@ -214,7 +215,7 @@ public class DateTimeSlider extends DateSlider {
 		if (mTitleText != null) {
 			int minute = mTime.get(Calendar.MINUTE)/MINUTEINTERVAL*MINUTEINTERVAL;
 			mTitleText.setText(String.format("Selected DateTime: %te/%tm/%ty %tH:%02d",
-					mTime,mTime,mTime,mTime,minute)); 
+					mTime,mTime,mTime,mTime,minute));
 		}
 	}
 }

@@ -4,6 +4,6 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" 
     android:background="@drawable/slider_nosnap"
-    android:paddingLeft="7px"
-    android:paddingRight="7px"> 
+    android:paddingLeft="5dip"
+    android:paddingRight="5dip"> 
 </com.googlecode.android.widgets.DateSlider.ScrollLayout>

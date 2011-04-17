@@ -32,7 +32,7 @@ import com.googlecode.android.widgets.DateSlider.DateSlider.TimeObject;
 /**
  * This interface represents the views that will settle the ScrollLayout. Each element has to deal
  * with its label via the setText method and needs to contain the start and end time of the element.
- * Moreover this interface contains three implementations one simple TextView, A two-row 
+ * Moreover this interface contains three implementations one simple TextView, A two-row
  * LinearLayout and a LinearLayout which colors Sundays red.
  *
  */
@@ -52,7 +52,7 @@ public interface TimeView {
 		private long endTime, startTime;
 		
 		/**
-		 * constructor 
+		 * constructor
 		 * @param context
 		 * @param isCenterView true if the element is the centered view in the ScrollLayout
 		 * @param textSize text size in dps
@@ -66,7 +66,7 @@ public interface TimeView {
 		 * this method should be overwritten by inheriting classes to define its own look and feel
 		 * @param isCenterView true if the element is in the center of the scrollLayout
 		 * @param textSize textSize in dps
-		 */	
+		 */
 		protected void setupView(boolean isCenterView, int textSize) {
 			setGravity(Gravity.CENTER);
 			setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSize);
@@ -115,10 +115,10 @@ public interface TimeView {
 		protected TextView topView, bottomView;
 		
 		/**
-		 * constructor 
+		 * constructor
 		 * 
 		 * @param context
-		 * @param isCenterView true if the element is the centered view in the ScrollLayout 
+		 * @param isCenterView true if the element is the centered view in the ScrollLayout
 		 * @param topTextSize	text size of the top TextView in dps
 		 * @param bottomTextSize	text size of the bottom TextView in dps
 		 * @param lineHeight	LineHeight of the top TextView
@@ -131,7 +131,7 @@ public interface TimeView {
 		/**
 		 * Setting up the top TextView and bottom TextVew
 		 * @param context
-		 * @param isCenterView true if the element is the centered view in the ScrollLayout 
+		 * @param isCenterView true if the element is the centered view in the ScrollLayout
 		 * @param topTextSize	text size of the top TextView in dps
 		 * @param bottomTextSize	text size of the bottom TextView in dps
 		 * @param lineHeight	LineHeight of the top TextView
@@ -151,9 +151,9 @@ public interface TimeView {
 				topView.setTextColor(0xFF333333);
 				bottomView.setTypeface(Typeface.DEFAULT_BOLD);
 				bottomView.setTextColor(0xFF444444);
-				topView.setPadding(0, 5-(int)(topTextSize/15.0), 0, 0);
+                topView.setPadding(0, 15 - (int) (topTextSize / 15.0), 0, 0);
 			} else {
-				topView.setPadding(0, 5, 0, 0);
+                topView.setPadding(0, 15, 0, 0);
 				topView.setTextColor(0xFF666666);
 				bottomView.setTextColor(0xFF666666);
 			}
@@ -172,11 +172,11 @@ public interface TimeView {
 			text = other.getTimeText().toString();
 			setText();
 			startTime = other.getStartTime();
-			endTime = other.getEndTime();			
+			endTime = other.getEndTime();
 		}
 		
 		/**
-		 * sets the TextView texts by splitting the text into two 
+		 * sets the TextView texts by splitting the text into two
 		 */
 		protected void setText() {
 			String[] splitTime = text.split(" ");
@@ -210,7 +210,7 @@ public interface TimeView {
 		/**
 		 * Constructor
 		 * @param context
-		 * @param isCenterView true if the element is the centered view in the ScrollLayout 
+		 * @param isCenterView true if the element is the centered view in the ScrollLayout
 		 * @param topTextSize	text size of the top TextView in dps
 		 * @param bottomTextSize	text size of the bottom TextView in dps
 		 * @param lineHeight	LineHeight of the top TextView
@@ -221,30 +221,37 @@ public interface TimeView {
 		}
 		
 
-		public void setVals(TimeObject to) {
+		@Override
+        public void setVals(TimeObject to) {
 			super.setVals(to);
 			Calendar c = Calendar.getInstance();
 			c.setTimeInMillis(to.endTime);
-			if (c.get(Calendar.DAY_OF_WEEK)==Calendar.SUNDAY && !isSunday) {
+            if (isWeekend(c) && !isSunday) {
 				isSunday=true;
 				colorMeSunday();
-			} else if (isSunday && c.get(Calendar.DAY_OF_WEEK)!=Calendar.SUNDAY) {
+            } else if (isSunday && !isWeekend(c)) {
 				isSunday=false;
 				colorMeWorkday();
 			}
 		}
+
+
+        private boolean isWeekend(Calendar c) {
+            int dayOfWeek = c.get(Calendar.DAY_OF_WEEK);
+            return (dayOfWeek == Calendar.SATURDAY) || (dayOfWeek == Calendar.SUNDAY);
+        }
 		
 		/**
 		 * this method is called when the current View takes a Sunday as time unit
 		 */
 		protected void colorMeSunday() {
 			if (isCenter) {
-				bottomView.setTextColor(0xFF773333);
-				topView.setTextColor(0xFF553333);
+                bottomView.setTextColor(0xFF773333);
+                topView.setTextColor(0xFF773333);
 			}
 			else {
-				bottomView.setTextColor(0xFF442222);
-				topView.setTextColor(0xFF553333);					
+                bottomView.setTextColor(0xFF553333);
+                topView.setTextColor(0xFF664444);
 			}
 		}
 		
@@ -258,11 +265,12 @@ public interface TimeView {
 				bottomView.setTextColor(0xFF444444);
 			} else {
 				topView.setTextColor(0xFF666666);
-				bottomView.setTextColor(0xFF666666);					
-			}			
+				bottomView.setTextColor(0xFF666666);
+			}
 		}
 		
-		public void setVals(TimeView other) {
+		@Override
+        public void setVals(TimeView other) {
 			super.setVals(other);
 			DayTimeLayoutView otherDay = (DayTimeLayoutView) other;
 			if (otherDay.isSunday && !isSunday) {

@@ -17,8 +17,6 @@ import leoliang.tasks365.task.Task;
 import leoliang.tasks365.task.TaskManager;
 import leoliang.tasks365.task.TaskOrderMover;
 import leoliang.tasks365.task.TaskOrderMover.MoveNotAllowException;
-import android.app.DatePickerDialog;
-import android.app.DatePickerDialog.OnDateSetListener;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Config;
@@ -28,8 +26,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.DatePicker;
 import android.widget.Toast;
+
+import com.googlecode.android.widgets.DateSlider.DateSlider;
+import com.googlecode.android.widgets.DateSlider.DateSlider.OnDateSetListener;
+import com.googlecode.android.widgets.DateSlider.DefaultDateSlider;
 
 public class TaskListActivity extends GDActivity {
 
@@ -170,21 +171,21 @@ public class TaskListActivity extends GDActivity {
     }
 
     private void scheduleTask(final Task task) {
-        new DatePickerDialog(this, new OnDateSetListener() {
+        new DefaultDateSlider(this, new OnDateSetListener() {
             @Override
-            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                task.startTime.set(Calendar.YEAR, year);
-                task.startTime.set(Calendar.MONTH, monthOfYear);
-                task.startTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            public void onDateSet(DateSlider view, Calendar selectedDate) {
+                task.startTime.set(Calendar.YEAR, selectedDate.get(Calendar.YEAR));
+                task.startTime.set(Calendar.MONTH, selectedDate.get(Calendar.MONTH));
+                task.startTime.set(Calendar.DAY_OF_MONTH, selectedDate.get(Calendar.DAY_OF_MONTH));
                 Calendar now = Calendar.getInstance();
                 if (task.startTime.before(now)) {
                     task.startTime = now;
                 }
                 task.isNew = false;
+                task.endTime = (Calendar) task.startTime.clone();
                 taskManager.saveTask(task);
             }
-        }, task.startTime.get(Calendar.YEAR), task.startTime.get(Calendar.MONTH),
-                task.startTime.get(Calendar.DAY_OF_MONTH) + 1).show();
+        }, task.startTime).show();
     }
 
     @Override

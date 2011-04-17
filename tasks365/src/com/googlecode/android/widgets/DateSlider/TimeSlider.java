@@ -2,7 +2,7 @@
  * Copyright (C) 2011 Daniel Berndt - Codeus Ltd  -  DateSlider
  * 
  * DateSlider which allows for an easy selection of a time if you only
- * want to offer certain minute intervals take a look at DateTimeSlider 
+ * want to offer certain minute intervals take a look at DateTimeSlider
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ package com.googlecode.android.widgets.DateSlider;
 
 import java.util.Calendar;
 
-import com.googlecode.android.widgets.DateSlider.R;
-
+import leoliang.tasks365.R;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -40,8 +39,8 @@ public class TimeSlider extends DateSlider {
 	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		// this needs to be called before everything else to set up the main layout of the DateSlider  
-		super.onCreate(savedInstanceState);		
+		// this needs to be called before everything else to set up the main layout of the DateSlider
+		super.onCreate(savedInstanceState);
 		
 		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		LayoutParams lp = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT);
@@ -130,7 +129,7 @@ public class TimeSlider extends DateSlider {
 		@Override
 		protected void setTitle() {
 			if (mTitleText != null) {
-				mTitleText.setText(String.format("Selected Time: %tR",mTime)); 
+				mTitleText.setText(String.format("Selected Time: %tR",mTime));
 			}
 		}
 

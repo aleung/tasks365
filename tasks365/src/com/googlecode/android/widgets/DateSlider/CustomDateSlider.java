@@ -2,7 +2,7 @@
  * Copyright (C) 2011 Daniel Berndt - Codeus Ltd  -  DateSlider
  * 
  * DateSlider which demonstrates the features of the DateSlider ond how
- * to adapt most parameters 
+ * to adapt most parameters
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package com.googlecode.android.widgets.DateSlider;
 
 import java.util.Calendar;
 
+import leoliang.tasks365.R;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -44,8 +45,8 @@ public class CustomDateSlider extends DateSlider {
 	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		// this needs to be called before everything else to set up the main layout of the DateSlider  
-		super.onCreate(savedInstanceState);		
+		// this needs to be called before everything else to set up the main layout of the DateSlider
+		super.onCreate(savedInstanceState);
 		
 		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		LayoutParams lp = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT);
@@ -145,7 +146,8 @@ public class CustomDateSlider extends DateSlider {
 		/**
 		 * create our costumised TimeTextView and return it
 		 */
-		public TimeView createView(Context context, boolean isCenterView) {
+		@Override
+        public TimeView createView(Context context, boolean isCenterView) {
 			return new CustomTimeTextView(context, isCenterView, 25);
 		}
 		
@@ -195,8 +197,7 @@ public class CustomDateSlider extends DateSlider {
 	@Override
 	protected void setTitle() {
 		if (mTitleText != null) {
-			mTitleText.setText(getContext().getString(R.string.dateSliderTitle) + 
-					String.format(": %tA, %te/%tm/%ty",mTime, mTime, mTime,mTime)); 
+            mTitleText.setText(String.format("%tA, %te/%tm/%ty", mTime, mTime, mTime, mTime));
 		}
 	}
 	
@@ -211,7 +212,7 @@ public class CustomDateSlider extends DateSlider {
 		
 		/**
 		 * Here we set up the text characteristics for the TextView, i.e. red colour,
-		 * serif font and semi-transparent white background for the centerView... and shadow!!!  
+		 * serif font and semi-transparent white background for the centerView... and shadow!!!
 		 */
 		@Override
 		protected void setupView(boolean isCenterView, int textSize) {

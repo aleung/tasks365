@@ -19,10 +19,12 @@
 
 package com.googlecode.android.widgets.DateSlider;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import leoliang.tasks365.R;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
@@ -81,8 +83,9 @@ public abstract class DateSlider extends Dialog {
 	
 	private android.view.View.OnClickListener okButtonClickListener = new android.view.View.OnClickListener() {
 		public void onClick(View v) {
-			if (onDateSetListener!=null)
-				onDateSetListener.onDateSet(DateSlider.this, mTime);
+			if (onDateSetListener!=null) {
+                onDateSetListener.onDateSet(DateSlider.this, mTime);
+            }
 			dismiss();
 		}
 	};
@@ -99,7 +102,7 @@ public abstract class DateSlider extends Dialog {
 	protected void setListeners() {
 		for (final ScrollLayout sl: mScrollerList) {
 			sl.setOnScrollListener(
-					new ScrollLayout.OnScrollListener() {		
+					new ScrollLayout.OnScrollListener() {
 						public void onScroll(long x) {
 							mTime.setTimeInMillis(x);
 							arrangeScroller(sl);
@@ -112,16 +115,20 @@ public abstract class DateSlider extends Dialog {
 	@Override
 	public Bundle onSaveInstanceState() {
 		Bundle savedInstanceState = super.onSaveInstanceState();
-		if (savedInstanceState==null) savedInstanceState = new Bundle();
+		if (savedInstanceState==null) {
+            savedInstanceState = new Bundle();
+        }
 		savedInstanceState.putLong("time", mTime.getTimeInMillis());
-		return savedInstanceState;	  
+		return savedInstanceState;
 	}
 	
 	protected void arrangeScroller(ScrollLayout source) {
 		setTitle();
 		if (source!=null) {
 			for (ScrollLayout scroller: mScrollerList) {
-				if (scroller==source) continue;
+				if (scroller==source) {
+                    continue;
+                }
 				scroller.setTime(mTime.getTimeInMillis(),0);
 			}
 		}
@@ -132,8 +139,7 @@ public abstract class DateSlider extends Dialog {
 	 */
 	protected void setTitle() {
 		if (mTitleText != null) {
-			mTitleText.setText(getContext().getString(R.string.dateSliderTitle) + 
-					String.format(": %te. %tB %tY", mTime,mTime,mTime)); 
+            mTitleText.setText(DateFormat.getDateInstance(DateFormat.MEDIUM).format(mTime.getTime()));
 		}
 	}
 	
@@ -152,17 +158,17 @@ public abstract class DateSlider extends Dialog {
 	
 	/**
 	 * This class has the purpose of telling the corresponding scroller, which values make up
-	 * a single TimeTextView element.   
+	 * a single TimeTextView element.
 	 *
 	 */
-	public abstract class Labeler {		
+	public abstract class Labeler {
 
 		/**
 		 * gets called once, when the scroller gets initialised
 		 * @param time
 		 * @return the TimeObject representing "time"
 		 */
-		public TimeObject getElem(long time) { 
+		public TimeObject getElem(long time) {
 			Calendar c = Calendar.getInstance();
 			c.setTimeInMillis(time);
 			return timeObjectfromCalendar(c);
@@ -174,7 +180,7 @@ public abstract class DateSlider extends Dialog {
 		 * 
 		 * @param context
 		 * @param isCenterView is true when the view is the central view
-		 * @return 
+		 * @return
 		 */
 		public TimeView createView(Context context, boolean isCenterView) {
 			return new TimeTextView(context, isCenterView, 25);
@@ -195,7 +201,7 @@ public abstract class DateSlider extends Dialog {
 	
 	/**
 	 * Very simple helper class that defines a time unit with a label (text) its start-
-	 * and end date 
+	 * and end date
 	 *
 	 */
 	public static class TimeObject {

@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2011 Daniel Berndt - Codeus Ltd  -  DateSlider
  * 
- * Default DateSlider which allows for an easy selection of a date 
+ * Default DateSlider which allows for an easy selection of a date
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.googlecode.android.widgets.DateSlider;
 
 import java.util.Calendar;
 
+import leoliang.tasks365.R;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -47,21 +48,22 @@ public class DefaultDateSlider extends DateSlider {
 	 */
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		// this needs to be called before everything else to set up the main layout of the DateSlider  
-		super.onCreate(savedInstanceState);		
+		// this needs to be called before everything else to set up the main layout of the DateSlider
+		super.onCreate(savedInstanceState);
 		
 		LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		LayoutParams lp = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.WRAP_CONTENT);
+        lp.topMargin = 20;
 		
 		// create the month scroller and assign its labeler and add it to the layout
 		ScrollLayout mMonthScroller = (ScrollLayout) inflater.inflate(R.layout.scroller, null);
-		mMonthScroller.setLabeler(monthLabeler, mTime.getTimeInMillis(),90,60);
+        mMonthScroller.setLabeler(monthLabeler, mTime.getTimeInMillis(), 90, 80);
 		mLayout.addView(mMonthScroller, 0,lp);
 		mScrollerList.add(mMonthScroller);
 		
-		// create the month scroller and assign its labeler and add it to the layout
+        // create the day scroller and assign its labeler and add it to the layout
 		ScrollLayout mDayScroller = (ScrollLayout) inflater.inflate(R.layout.scroller, null);
-		mDayScroller.setLabeler(dayLabeler, mTime.getTimeInMillis(),45,60);
+        mDayScroller.setLabeler(dayLabeler, mTime.getTimeInMillis(), 45, 80);
 		mLayout.addView(mDayScroller, 1, lp);
 		mScrollerList.add(mDayScroller);
 		
@@ -108,7 +110,7 @@ public class DefaultDateSlider extends DateSlider {
 		 * rather than a standard TextView this is returning a LimearLayout with two TextViews
 		 */
 		public TimeView createView(Context context, boolean isCenterView) {
-			return new TimeLayoutView(context, isCenterView,25,8,0.95f);
+            return new TimeLayoutView(context, isCenterView, 25, 12, 1);
 		}
 		
 	};
@@ -153,7 +155,7 @@ public class DefaultDateSlider extends DateSlider {
 		 * rather than a standard TextView this is returning a LimearLayout with two TextViews
 		 */
 		public TimeView createView(Context context, boolean isCenterView) {
-			return new DayTimeLayoutView(context, isCenterView,30,8,0.8f);
+            return new DayTimeLayoutView(context, isCenterView, 30, 12, 0.9f);
 		}
 		
 	};
