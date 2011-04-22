@@ -30,8 +30,6 @@
  */
 package leoliang.tasks365.task;
 
-import java.util.TimeZone;
-
 import leoliang.tasks365.calendar.Calendar;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -39,6 +37,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.text.TextUtils;
+import android.text.format.Time;
 import android.util.Log;
 
 public class AndroidCalendar {
@@ -101,21 +100,21 @@ public class AndroidCalendar {
         // if (calendarUriBase == null) { throw new Exception(); }
     }
 
-    public static java.util.Calendar beginOfToday() {
-        java.util.Calendar time = java.util.Calendar.getInstance();
-        time.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        time.set(java.util.Calendar.MINUTE, 0);
-        time.set(java.util.Calendar.SECOND, 0);
-        time.set(java.util.Calendar.MILLISECOND, 0);
+    public static Time beginOfToday() {
+        Time time = new Time();
+        time.setToNow();
+        time.hour = 0;
+        time.minute = 0;
+        time.second = 0;
         return time;
     }
 
-    public static java.util.Calendar endOfToday() {
-        java.util.Calendar time = java.util.Calendar.getInstance();
-        time.set(java.util.Calendar.HOUR_OF_DAY, 23);
-        time.set(java.util.Calendar.MINUTE, 59);
-        time.set(java.util.Calendar.SECOND, 0);
-        time.set(java.util.Calendar.MILLISECOND, 0);
+    public static Time endOfToday() {
+        Time time = new Time();
+        time.setToNow();
+        time.hour = 23;
+        time.minute = 59;
+        time.second = 0;
         return time;
     }
 
@@ -133,7 +132,7 @@ public class AndroidCalendar {
             columnEventId = c.getColumnIndexOrThrow(Calendar.Events._ID);
         }
         task.id = c.getLong(columnEventId);
-        
+
         task.calendarId = c.getLong(c.getColumnIndexOrThrow(Calendar.Events.CALENDAR_ID));
         task.setTitleWithTags(c.getString(c.getColumnIndexOrThrow(Calendar.Events.TITLE)));
         task.isAllDay = c.getInt(c.getColumnIndexOrThrow(Calendar.Events.ALL_DAY)) == 1 ? true : false;
@@ -141,23 +140,24 @@ public class AndroidCalendar {
 
         int columnDtStart = c.getColumnIndex(Calendar.Events.DTSTART);
         if (columnDtStart != -1) {
-            task.startTime.setTimeInMillis(c.getLong(columnDtStart));
+            task.startTime.set(c.getLong(columnDtStart));
         }
 
         int columnDtEnd = c.getColumnIndex(Calendar.Events.DTEND);
         if (columnDtEnd != -1) {
-            task.endTime.setTimeInMillis(c.getLong(columnDtEnd));
+            task.endTime.set(c.getLong(columnDtEnd));
         }
 
         int columnStartDay = c.getColumnIndex(Calendar.Instances.START_DAY);
         if (columnStartDay != -1) {
-            int daysSinceEpoch = c.getInt(c.getColumnIndexOrThrow(Calendar.Instances.START_DAY));
             int minutes = c.getInt(c.getColumnIndexOrThrow(Calendar.Instances.START_MINUTE));
-            task.startTime.set(1970, 0, 1, 0, 0, 0);
-            task.startTime.add(java.util.Calendar.DAY_OF_YEAR, daysSinceEpoch - EPOCH_UNIX_ERA_DAY);
-            task.startTime.add(java.util.Calendar.MINUTE, minutes);
+            int day = c.getInt(c.getColumnIndexOrThrow(Calendar.Instances.START_DAY));
+            task.startTime = new Time();
+            task.startTime.setJulianDay(day);
+            task.startTime.minute += minutes;
+            task.startTime.normalize(false);
             // TODO: set end time
-            task.endTime = (java.util.Calendar) task.startTime.clone();
+            task.endTime = new Time(task.startTime);
         }
 
         // FIXME: Tricky, setDescriptionWithExtraData() must be called after setting isAllDay, startTime and endTime
@@ -199,19 +199,18 @@ public class AndroidCalendar {
             values.put(Calendar.Events.DESCRIPTION, task.getDescriptionWithExtraData());
             if (task.isAllDay) {
                 values.put(Calendar.Events.ALL_DAY, 1);
-                java.util.Calendar time = (java.util.Calendar) task.startTime.clone();
-                time.setTimeZone(TimeZone.getTimeZone("UMT"));
-                time.set(java.util.Calendar.HOUR_OF_DAY, 0);
-                time.set(java.util.Calendar.MINUTE, 0);
-                time.set(java.util.Calendar.SECOND, 0);
-                time.set(java.util.Calendar.MILLISECOND, 0);
-                values.put(Calendar.Events.DTSTART, time.getTimeInMillis());
-                time.add(java.util.Calendar.DAY_OF_MONTH, 1);
-                values.put(Calendar.Events.DTEND, time.getTimeInMillis());
+                Time time = new Time(task.startTime);
+                time.switchTimezone("UMT");
+                time.hour = 0;
+                time.minute = 0;
+                time.second = 0;
+                values.put(Calendar.Events.DTSTART, time.toMillis(true));
+                time.monthDay += 1;
+                values.put(Calendar.Events.DTEND, time.toMillis(true));
             } else {
                 values.put(Calendar.Events.ALL_DAY, 0);
-                values.put(Calendar.Events.DTSTART, task.startTime.getTimeInMillis());
-                values.put(Calendar.Events.DTEND, task.endTime.getTimeInMillis());
+                values.put(Calendar.Events.DTSTART, task.startTime.toMillis(true));
+                values.put(Calendar.Events.DTEND, task.endTime.toMillis(true));
             }
         }
         return values;
@@ -238,18 +237,15 @@ public class AndroidCalendar {
      * @param date - hour/minute/seconds are ignored, time zone is used
      * @return events scheduled in specified date
      */
-    public Cursor queryNonAllDayEventsByDate(long calendarId, java.util.Calendar date) {
-        java.util.Calendar from = java.util.Calendar.getInstance();
-        from.clear();
-        from.set(date.get(java.util.Calendar.YEAR), date.get(java.util.Calendar.MONTH),
-                date.get(java.util.Calendar.DAY_OF_MONTH), 0, 0, 0);
-        java.util.Calendar to = (java.util.Calendar) from.clone();
-        to.add(java.util.Calendar.DAY_OF_MONTH, 1);
+    public Cursor queryNonAllDayEventsByDate(long calendarId, Time date) {
+        Time from = new Time();
+        from.set(date.monthDay, date.month, date.year);
+        Time to = new Time(from);
+        to.monthDay += 1;
 
-        Log.v(LOG_TAG, "Query non all day events in [" + Task.formatDate(from) + ", " + Task.formatDate(to) + ")");
-        Cursor cursor = Calendar.Instances.query(context.getContentResolver(), INSTANCE_COLUMNS,
-                from.getTimeInMillis(),
-                to.getTimeInMillis(), calendarId);
+        Log.v(LOG_TAG, "Query non all day events in [" + from.format3339(false) + ", " + to.format3339(false) + ")");
+        Cursor cursor = Calendar.Instances.query(context.getContentResolver(), INSTANCE_COLUMNS, from.toMillis(true),
+                to.toMillis(true), calendarId);
         return cursor;
     }
 
@@ -260,19 +256,15 @@ public class AndroidCalendar {
      * @param date - in local time zone, hour/minute/seconds are ignored
      * @return events scheduled in specified date
      */
-    public Cursor queryAllDayEventsByDate(long calendarId, java.util.Calendar date) {
-        java.util.Calendar umtDate = (java.util.Calendar) date.clone();
-        umtDate.setTimeZone(TimeZone.getTimeZone("UMT"));
-        umtDate.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        umtDate.set(java.util.Calendar.MINUTE, 0);
-        umtDate.set(java.util.Calendar.SECOND, 0);
-        umtDate.set(java.util.Calendar.MILLISECOND, 0);
+    public Cursor queryAllDayEventsByDate(long calendarId, Time date) {
+        Time umtDate = new Time("UMT");
+        umtDate.set(date.monthDay, date.month, date.year);
 
         String[] whereArgs = new String[2];
         whereArgs[0] = String.valueOf(calendarId);
-        whereArgs[1] = String.valueOf(umtDate.getTimeInMillis());
+        whereArgs[1] = String.valueOf(umtDate.toMillis(false));
 
-        Log.v(LOG_TAG, "Query all day events at " + Task.formatDate(umtDate));
+        Log.v(LOG_TAG, "Query all day events at " + umtDate.format3339(true));
         Cursor cursor = Calendar.Events.query(context.getContentResolver(), TASK_COLUMNS,
                 ALL_DAY_EVENT_SELECTION_CRITERIA, whereArgs, null);
         return cursor;

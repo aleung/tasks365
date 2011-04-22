@@ -1,7 +1,6 @@
 package leoliang.tasks365.task;
 
-import java.util.Calendar;
-
+import android.text.format.Time;
 import android.util.Log;
 import android.widget.ListAdapter;
 
@@ -59,7 +58,7 @@ public class TaskOrderMover {
 
         int prevItemPosition = targetPosition - 1;
         Task prevItem = null;
-        Calendar prevItemTime;
+        Time prevItemTime;
         if (prevItemPosition < 0) {
             prevItemTime = AndroidCalendar.beginOfToday();
         } else {
@@ -69,16 +68,13 @@ public class TaskOrderMover {
 
         int nextItemPosition = targetPosition;
         Task nextItem = null;
-        Calendar nextItemTime;
+        Time nextItemTime;
         if (nextItemPosition < list.getCount()) {
             nextItem = (Task) list.getItem(nextItemPosition);
             nextItemTime = getTaskStartTime(nextItem);
         } else {
             nextItemTime = AndroidCalendar.endOfToday();
         }
-
-        Log.v(LOG_TAG,
-                "> Prev task: " + Task.formatDate(prevItemTime) + ", next task: " + Task.formatDate(nextItemTime));
 
         if (isStartTimeChangable(taskToBeMoved)) {
             if (prevItemTime.equals(nextItemTime)) {
@@ -90,13 +86,10 @@ public class TaskOrderMover {
                     nextItemTime = getTaskStartTime(nextItem);
                 }
             }
-            Log.v(LOG_TAG,
-                    "< Prev task: " + Task.formatDate(prevItemTime) + ", next task: " + Task.formatDate(nextItemTime));
 
             taskToBeMoved.isNew = false;
-            taskToBeMoved.startTime
-                    .setTimeInMillis((prevItemTime.getTimeInMillis() + nextItemTime.getTimeInMillis()) / 2);
-            taskToBeMoved.endTime = (Calendar) taskToBeMoved.startTime.clone();
+            taskToBeMoved.startTime.set((prevItemTime.toMillis(false) + nextItemTime.toMillis(false)) / 2);
+            taskToBeMoved.endTime = new Time(taskToBeMoved.startTime);
             taskManager.saveTask(taskToBeMoved);
         } else {
             if (!prevItemTime.before(taskToBeMoved.startTime)) {
@@ -116,7 +109,7 @@ public class TaskOrderMover {
      * @param time - before when bring forward to
      * @param ignoreItemPosition - skip this item
      */
-    private void bringForwardTask(int itemPosition, Calendar time, int ignoreItemPosition) {
+    private void bringForwardTask(int itemPosition, Time time, int ignoreItemPosition) {
         if (itemPosition < 0) {
             return;
         }
@@ -128,7 +121,7 @@ public class TaskOrderMover {
         if (prevItemPosition == ignoreItemPosition) {
             prevItemPosition -= 1;
         }
-        Calendar prevItemTime;
+        Time prevItemTime;
         Task prevItem = null;
         if (prevItemPosition < 0) {
             prevItemTime = AndroidCalendar.beginOfToday();
@@ -141,8 +134,8 @@ public class TaskOrderMover {
             bringForwardTask(prevItemPosition, time, ignoreItemPosition);
         }
 
-        task.startTime.setTimeInMillis((prevItemTime.getTimeInMillis() + time.getTimeInMillis()) / 2);
-        task.endTime = (Calendar) task.startTime.clone();
+        task.startTime.set((prevItemTime.toMillis(false) + time.toMillis(false)) / 2);
+        task.endTime = new Time(task.startTime);
         Log.v(LOG_TAG, "Bring forward task " + task.id);
         taskManager.saveTask(task);
     }
@@ -154,7 +147,7 @@ public class TaskOrderMover {
      * @param time - after when put off to
      * @param ignoreItemPosition - skip this item
      */
-    private void putOffTask(int itemPosition, Calendar time, int ignoreItemPosition) {
+    private void putOffTask(int itemPosition, Time time, int ignoreItemPosition) {
         int lastPositionInList = list.getCount() - 1;
         if (itemPosition > lastPositionInList) {
             return;
@@ -167,7 +160,7 @@ public class TaskOrderMover {
         if (nextItemPosition == ignoreItemPosition) {
             nextItemPosition += 1;
         }
-        Calendar nextItemTime;
+        Time nextItemTime;
         Task nextItem = null;
         if (nextItemPosition > lastPositionInList) {
             nextItemTime = AndroidCalendar.endOfToday();
@@ -180,14 +173,14 @@ public class TaskOrderMover {
             putOffTask(nextItemPosition, time, ignoreItemPosition);
         }
 
-        task.startTime.setTimeInMillis((nextItemTime.getTimeInMillis() + time.getTimeInMillis()) / 2);
-        task.endTime = (Calendar) task.startTime.clone();
+        task.startTime.set((nextItemTime.toMillis(false) + time.toMillis(false)) / 2);
+        task.endTime = new Time(task.startTime);
         Log.v(LOG_TAG, "Put off task " + task.id);
         taskManager.saveTask(task);
     }
 
 
-    private Calendar getTaskStartTime(Task task) {
+    private Time getTaskStartTime(Task task) {
         if (task.isDone) {
             return AndroidCalendar.endOfToday();
         }

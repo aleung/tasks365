@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Formatter;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -17,6 +16,7 @@ import leoliang.tasks365.task.TagParser.TagParseResult;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.text.format.Time;
 import android.util.Log;
 
 /**
@@ -38,8 +38,8 @@ public class Task {
     // fields directly maps to content provider data model
     public long id;
     public long calendarId;
-    public Calendar startTime = Calendar.getInstance();
-    public Calendar endTime = Calendar.getInstance();
+    public Time startTime = new Time();
+    public Time endTime = new Time();
     public boolean isAllDay = true;
 
     /** pure title, without tags */
@@ -58,14 +58,6 @@ public class Task {
 
     // read only field
     boolean isRecurrentEvent = false;
-
-    public static String formatDate(Date date) {
-        return dateFormatter.format(date);
-    }
-
-    public static String formatDate(java.util.Calendar date) {
-        return formatDate(date.getTime());
-    }
 
     public String getDescriptionWithExtraData() {
         StringBuilder s = new StringBuilder();
@@ -149,19 +141,18 @@ public class Task {
      */
     public void scheduleToday() {
         startTime = AndroidCalendar.endOfToday();
-        endTime = (Calendar) startTime.clone();
+        endTime = new Time(startTime);
         isAllDay = true;
     }
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder();
-        Formatter formatter = new Formatter(s);
-        formatter
+        return String
                 .format("{id:%d, calendarId:%d, title:%s, isAllDay:%b, startTime:%s, endTime:%s, isPinned:%b, isDone:%b, isStarred=%b}",
-                        id, calendarId, title, isAllDay, formatDate(startTime), formatDate(endTime), isPinned(),
+                        id, calendarId, title, isAllDay, startTime.format("%Y%m%d %H:%M:%S %z"),
+                        endTime.format("%Y%m%d %H:%M:%S %z"),
+                        isPinned(),
                         isDone, isStarred);
-        return s.toString();
     }
 
     private void addTag(StringBuilder s, String tag) {
@@ -177,12 +168,8 @@ public class Task {
                 json.put("due", dueFormatter.format(due.getTime()));
             }
             if (isAllDay) {
-                json.put(
-                        "scheduledTime",
-                        new JSONObject().put("hour", startTime.get(Calendar.HOUR_OF_DAY))
-                                .put("minute", startTime.get(Calendar.MINUTE))
-                                .put("second", startTime.get(Calendar.SECOND))
-                                .put("millisecond", startTime.get(Calendar.MILLISECOND)));
+                json.put("scheduledTime", new JSONObject().put("hour", startTime.hour).put("minute", startTime.minute)
+                        .put("second", startTime.second));
             }
             if (json.length() > 0) {
                 s.append("\n\n");
@@ -229,11 +216,10 @@ public class Task {
                 if (task.isAllDay) {
                     JSONObject scheduledTimeJson = jsonObject.optJSONObject("scheduledTime");
                     if (scheduledTimeJson != null) {
-                        task.startTime.set(Calendar.HOUR_OF_DAY, scheduledTimeJson.optInt("hour", 23));
-                        task.startTime.set(Calendar.MINUTE, scheduledTimeJson.optInt("minute", 59));
-                        task.startTime.set(Calendar.SECOND, scheduledTimeJson.optInt("second", 0));
-                        task.startTime.set(Calendar.MILLISECOND, scheduledTimeJson.optInt("millisecond", 0));
-                        task.endTime = (Calendar) task.startTime.clone();
+                        task.startTime.hour = scheduledTimeJson.optInt("hour", 23);
+                        task.startTime.minute = scheduledTimeJson.optInt("minute", 59);
+                        task.startTime.second = scheduledTimeJson.optInt("second", 0);
+                        task.endTime = new Time(task.startTime);
                     }
                 }
             } catch (JSONException e) {

@@ -9,6 +9,7 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.os.Handler;
+import android.text.format.Time;
 import android.util.Log;
 
 /**
@@ -45,7 +46,7 @@ public class SingleDayTaskQuery {
      * 
      * @param date
      */
-    public void query(java.util.Calendar date) {
+    public void query(Time date) {
         MyDataSetObserver myDataSetObserver = new MyDataSetObserver();
         ChangeObserver changeObserver = new ChangeObserver();
         AndroidCalendar calenar = new AndroidCalendar(activity);

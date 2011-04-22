@@ -19,6 +19,7 @@ import leoliang.tasks365.task.TaskOrderMover;
 import leoliang.tasks365.task.TaskOrderMover.MoveNotAllowException;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.format.Time;
 import android.util.Config;
 import android.util.Log;
 import android.view.Menu;
@@ -117,7 +118,9 @@ public class TaskListActivity extends GDActivity {
     private void initializeQuery() {
         calendarId = application.getCalendarId();
         query = new SingleDayTaskQuery(this, calendarId, adapter);
-        query.query(Calendar.getInstance());
+        Time now = new Time();
+        now.setToNow();
+        query.query(now);
     }
 
     private void showQuickActionBar(View view, final int position) {
@@ -171,21 +174,25 @@ public class TaskListActivity extends GDActivity {
     }
 
     private void scheduleTask(final Task task) {
+        Calendar defaultTime = Calendar.getInstance();
+        defaultTime.setTimeInMillis(task.startTime.toMillis(false));
+
         new DefaultDateSlider(this, new OnDateSetListener() {
             @Override
             public void onDateSet(DateSlider view, Calendar selectedDate) {
-                task.startTime.set(Calendar.YEAR, selectedDate.get(Calendar.YEAR));
-                task.startTime.set(Calendar.MONTH, selectedDate.get(Calendar.MONTH));
-                task.startTime.set(Calendar.DAY_OF_MONTH, selectedDate.get(Calendar.DAY_OF_MONTH));
-                Calendar now = Calendar.getInstance();
+                task.startTime.year = selectedDate.get(Calendar.YEAR);
+                task.startTime.month = selectedDate.get(Calendar.MONTH);
+                task.startTime.monthDay = selectedDate.get(Calendar.DAY_OF_MONTH);
+                Time now = new Time();
+                now.setToNow();
                 if (task.startTime.before(now)) {
                     task.startTime = now;
                 }
                 task.isNew = false;
-                task.endTime = (Calendar) task.startTime.clone();
+                task.endTime = new Time(task.startTime);
                 taskManager.saveTask(task);
             }
-        }, task.startTime).show();
+        }, defaultTime).show();
     }
 
     @Override

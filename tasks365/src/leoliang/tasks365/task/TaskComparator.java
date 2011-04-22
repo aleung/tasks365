@@ -2,6 +2,8 @@ package leoliang.tasks365.task;
 
 import java.util.Comparator;
 
+import android.text.format.Time;
+
 /**
  * Sort tasks by status and startTime. Tasks of different status order in: normal, new, done.
  */
@@ -23,7 +25,7 @@ public class TaskComparator implements Comparator<Task> {
             return -1;
         }
 
-        return task1.startTime.compareTo(task2.startTime);
+        return Time.compare(task1.startTime, task2.startTime);
     }
 
 }

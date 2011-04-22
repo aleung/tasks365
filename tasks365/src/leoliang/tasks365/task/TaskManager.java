@@ -1,11 +1,10 @@
 package leoliang.tasks365.task;
 
-import java.util.Calendar;
-
 import leoliang.tasks365.MyApplication;
 import leoliang.tasks365.task.AndroidCalendar.OperationFailure;
 import android.content.Context;
 import android.database.Cursor;
+import android.text.format.Time;
 import android.util.Log;
 
 public class TaskManager {
@@ -42,8 +41,8 @@ public class TaskManager {
 
     public void dealWithTasksInThePast() {
         long calendarId = application.getCalendarId();
-        Calendar date = Calendar.getInstance();
-        date.setTimeInMillis(application.getLastRunTime());
+        Time date = new Time();
+        date.set(application.getLastRunTime());
         Cursor cursor;
 
         while (date.before(AndroidCalendar.beginOfToday())) {
@@ -55,8 +54,8 @@ public class TaskManager {
             dealWithTasksInThePast(cursor);
             cursor.close();
 
-            date.add(java.util.Calendar.DATE, 1);
-            application.setLastRunTime(date.getTimeInMillis());
+            date.monthDay += 1;
+            application.setLastRunTime(date.toMillis(true));
         }
         application.setLastRunTime(System.currentTimeMillis());
     }

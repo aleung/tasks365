@@ -1,8 +1,5 @@
 package leoliang.tasks365;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
@@ -25,8 +22,6 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
     // view type
     private static final int VIEW_TYPE_OPEN_TASK = 0;
     private static final int VIEW_TYPE_FINISHED_TASK = 1;
-
-    private static final DateFormat timeFormatter = new SimpleDateFormat("HH:mm ");
 
     private List<Task> tasks;
     private LayoutInflater inflater;
@@ -100,7 +95,7 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
     private void bindViewForOpenTask(View view, final Task task) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
         viewHolder.title.setText(task.title);
-        String scheduleTime = task.isAllDay ? "" : formatTime(task.startTime);
+        String scheduleTime = task.isAllDay ? "" : task.startTime.format("%H:%M ");
         viewHolder.scheduleTime.setText(scheduleTime);
         String tags = "";
         if (task.isNew) {
@@ -119,16 +114,11 @@ public class TaskListAdapter extends BaseAdapter implements QueryResultObserver 
         // TODO: tags, daysToDue
     }
 
-    private String formatTime(Calendar time) {
-        return timeFormatter.format(time.getTime());
-    }
-
     private View newView(Task task) {
         if (task.isDone) {
             return newViewForCompletedTask();
-        } else {
-            return newViewForOpenTask();
         }
+        return newViewForOpenTask();
     }
 
     private View newViewForCompletedTask() {
