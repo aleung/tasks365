@@ -72,6 +72,13 @@ public class DayTaskListView extends DraggableListView {
 
     }
 
+    public void terminate() {
+        if (query != null) {
+            query.close();
+        }
+        query = null;
+    }
+
     private void initializeQuery(Time date) {
         long calendarId = application.getCalendarId();
         query = new SingleDayTaskQuery(parentActivity, calendarId, adapter);

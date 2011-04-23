@@ -40,7 +40,7 @@ import android.widget.ViewSwitcher;
 /**
  * Main activity of the application, contains the task list of one day.
  */
-public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFactory {
+public class TaskListActivity extends GDActivity {
 
     private static final String LOG_TAG = "tasks365";
 
@@ -58,9 +58,8 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
 
     private TaskManager taskManager;
     private MyApplication application;
-    private ViewSwitcher viewSwitcher;
+    private ListSwitcher listSwitcher;
     private long calendarId = -1;
-    private Time displayDate = new Time();
     GestureDetector flingDetector;
 
 
@@ -78,11 +77,10 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
 
         addActionBarItem(Type.Add, R.id.action_bar_add);
 
-        viewSwitcher = (ViewSwitcher) findViewById(R.id.switcher);
-        viewSwitcher.setFactory(this);
+        listSwitcher = new ListSwitcher((ViewSwitcher) findViewById(R.id.switcher));
 
         // TODO: set day by savedInstanceState
-        gotoToday();
+        listSwitcher.gotoToday();
 
         flingDetector = new GestureDetector(this, new SimpleOnGestureListener() {
             @Override
@@ -94,9 +92,8 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
                 int distanceY = Math.abs(deltaY);
 
                 if ((distanceX >= HORIZONTAL_SCROLL_THRESHOLD) && (distanceX > distanceY)) {
-                    boolean switchForward = initNextView(deltaX);
-                    DayTaskListView view = (DayTaskListView) viewSwitcher.getCurrentView();
-                    switchViews(switchForward, 0, view.getWidth());
+                    boolean switchForward = deltaX < 0;
+                    listSwitcher.switchList(switchForward, 0);
                     return true;
                 }
                 return false;
@@ -109,69 +106,11 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
         // end of TODO
     }
 
-    private boolean initNextView(int deltaX) {
-        boolean switchForward;
-        if (deltaX > 0) {
-            switchForward = false;
-        } else {
-            switchForward = true;
-        }
-
-        DayTaskListView view = (DayTaskListView) viewSwitcher.getNextView();
-        //view.layout(getLeft(), getTop(), getRight(), getBottom());
-
-        // TODO: next day or previous day
-
-        return switchForward;
-    }
-
-    private View switchViews(boolean forward, float xOffSet, float width) {
-        float progress = Math.abs(xOffSet) / width;
-        if (progress > 1.0f) {
-            progress = 1.0f;
-        }
-
-        float inFromXValue, inToXValue;
-        float outFromXValue, outToXValue;
-        if (forward) {
-            inFromXValue = 1.0f - progress;
-            inToXValue = 0.0f;
-            outFromXValue = -progress;
-            outToXValue = -1.0f;
-        } else {
-            inFromXValue = progress - 1.0f;
-            inToXValue = 0.0f;
-            outFromXValue = progress;
-            outToXValue = 1.0f;
-        }
-
-        // We have to allocate these animation objects each time we switch views
-        // because that is the only way to set the animation parameters.
-        TranslateAnimation inAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, inFromXValue,
-                Animation.RELATIVE_TO_SELF, inToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
-
-        TranslateAnimation outAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, outFromXValue,
-                Animation.RELATIVE_TO_SELF, outToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
-
-        // Reduce the animation duration based on how far we have already swiped.
-        long duration = (long) (ANIMATION_DURATION * (1.0f - progress));
-        inAnimation.setDuration(duration);
-        outAnimation.setDuration(duration);
-        viewSwitcher.setInAnimation(inAnimation);
-        viewSwitcher.setOutAnimation(outAnimation);
-
-        // TODO: release queries in current view
-        viewSwitcher.showNext();
-        DayTaskListView view = (DayTaskListView) viewSwitcher.getCurrentView();
-        view.requestFocus();
-        return view;
-    }
-
     @Override
     protected void onStart() {
         super.onStart();
         if (application.getCalendarId() != calendarId) {
-            gotoToday();
+            listSwitcher.gotoToday();
         }
     }
 
@@ -217,18 +156,102 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
         return super.onTouchEvent(ev);
     }
 
-    @Override
-    public View makeView() {
-        DayTaskListView view = new DayTaskListView(this);
-        view.setId(VIEW_ID);
-        view.setLayoutParams(new ViewSwitcher.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-        return view;
-    }
 
-    private void gotoToday() {
-        DayTaskListView taskListView = (DayTaskListView) viewSwitcher.getCurrentView();
-        displayDate.setToNow();
-        taskListView.requestFocus();
-        taskListView.initialize(displayDate);
+    class ListSwitcher implements ViewSwitcher.ViewFactory {
+
+        private Time displayDate = new Time();
+        private ViewSwitcher viewSwitcher;
+
+        public ListSwitcher(ViewSwitcher viewSwitcher) {
+            viewSwitcher.setFactory(this);
+            this.viewSwitcher = viewSwitcher;
+        }
+
+        @Override
+        public View makeView() {
+            DayTaskListView view = new DayTaskListView(TaskListActivity.this);
+            view.setId(VIEW_ID);
+            view.setLayoutParams(new ViewSwitcher.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            return view;
+        }
+
+        public void switchList(boolean forward, float xOffSet) {
+            int width = viewSwitcher.getCurrentView().getWidth();
+            float progress = Math.abs(xOffSet) / width;
+            if (progress > 1.0f) {
+                progress = 1.0f;
+            }
+
+            float inFromXValue, inToXValue;
+            float outFromXValue, outToXValue;
+            if (forward) {
+                inFromXValue = 1.0f - progress;
+                inToXValue = 0.0f;
+                outFromXValue = -progress;
+                outToXValue = -1.0f;
+            } else {
+                inFromXValue = progress - 1.0f;
+                inToXValue = 0.0f;
+                outFromXValue = progress;
+                outToXValue = 1.0f;
+            }
+
+            // We have to allocate these animation objects each time we switch views
+            // because that is the only way to set the animation parameters.
+            TranslateAnimation inAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, inFromXValue,
+                    Animation.RELATIVE_TO_SELF, inToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
+
+            TranslateAnimation outAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, outFromXValue,
+                    Animation.RELATIVE_TO_SELF, outToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
+
+            // Reduce the animation duration based on how far we have already swiped.
+            long duration = (long) (ANIMATION_DURATION * (1.0f - progress));
+            inAnimation.setDuration(duration);
+            outAnimation.setDuration(duration);
+            viewSwitcher.setInAnimation(inAnimation);
+            viewSwitcher.setOutAnimation(outAnimation);
+
+            if (forward) {
+                gotoNextDay();
+            } else {
+                gotoPrevDay();
+            }
+        }
+
+        public void gotoToday() {
+            displayDate.setToNow();
+            update();
+        }
+
+        public void gotoNextDay() {
+            displayDate.monthDay += 1;
+            update();
+        }
+
+        public void gotoPrevDay() {
+            displayDate.monthDay -= 1;
+            update();
+        }
+
+        private void update() {
+            displayDate.normalize(false);
+            updateTitle();
+            switchList();
+        }
+
+        private void updateTitle() {
+            setTitle(displayDate.format("%a %m/%d"));
+        }
+
+        private void switchList() {
+            DayTaskListView currentView = (DayTaskListView) viewSwitcher.getCurrentView();
+            currentView.terminate();
+
+            viewSwitcher.showNext();
+
+            DayTaskListView taskListView = (DayTaskListView) viewSwitcher.getCurrentView();
+            taskListView.requestFocus();
+            taskListView.initialize(displayDate);
+        }
     }
 }

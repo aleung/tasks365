@@ -48,9 +48,4 @@ public class MyApplication extends GDApplication {
         getPreferences().edit().putLong(PREFERENCE_LAST_RUN_TIME, time).commit();
     }
 
-    @Override
-    public Class<?> getHomeActivityClass() {
-        return TaskListActivity.class;
-    }
-
 }

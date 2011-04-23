@@ -39,6 +39,13 @@ public class SingleDayTaskQuery {
         this.calendarId = calendarId;
     }
 
+    public void close() {
+        activity.stopManagingCursor(eventifyTaskCursor);
+        eventifyTaskCursor.close();
+        activity.stopManagingCursor(normalTaskCursor);
+        normalTaskCursor.close();
+    }
+
     /**
      * Start the query.
      * <p>
@@ -75,6 +82,9 @@ public class SingleDayTaskQuery {
     }
 
     private void loadTasks(Cursor cursor) {
+        if (cursor.isClosed()) {
+            return;
+        }
         Log.v(LOG_TAG, "Load tasks: " + CursorHelper.getResultSet(cursor));
         if (!cursor.moveToFirst()) {
             Log.v(LOG_TAG, "Cursor is empty");
