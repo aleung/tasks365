@@ -13,7 +13,8 @@ import leoliang.tasks365.task.Task;
 import leoliang.tasks365.task.TaskManager;
 import leoliang.tasks365.task.TaskOrderMover;
 import leoliang.tasks365.task.TaskOrderMover.MoveNotAllowException;
-import android.app.Activity;
+import android.text.format.Time;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Toast;
@@ -33,20 +34,20 @@ public class DayTaskListView extends DraggableListView {
     private static final int MENU_UNSTAR_TASK = 6;
 
     private TaskListAdapter adapter;
-    private Activity activity;
+    private TaskListActivity parentActivity;
     private MyApplication application;
     private SingleDayTaskQuery query;
     private TaskManager taskManager;
 
-    public DayTaskListView(Activity activity) {
+    public DayTaskListView(TaskListActivity activity) {
         super(activity, null);
-        this.activity = activity;
+        parentActivity = activity;
         application = (MyApplication) activity.getApplication();
         taskManager = new TaskManager(activity, application);
     }
 
-    public void initialize(Calendar date) {
-        adapter = new TaskListAdapter(activity);
+    public void initialize(Time date) {
+        adapter = new TaskListAdapter(parentActivity);
         initializeQuery(date);
 
         setAdapter(adapter);
@@ -64,22 +65,22 @@ public class DayTaskListView extends DraggableListView {
                     new TaskOrderMover(adapter, taskManager).moveTaskToPosition(from, to);
                     adapter.notifyDataSetChanged();
                 } catch (MoveNotAllowException e) {
-                    Toast.makeText(activity, R.string.done_task_no_move, Toast.LENGTH_LONG);
+                    Toast.makeText(parentActivity, R.string.done_task_no_move, Toast.LENGTH_LONG);
                 }
             }
         });
 
     }
 
-    private void initializeQuery(Calendar date) {
+    private void initializeQuery(Time date) {
         long calendarId = application.getCalendarId();
-        query = new SingleDayTaskQuery(activity, calendarId, adapter);
+        query = new SingleDayTaskQuery(parentActivity, calendarId, adapter);
         query.query(date);
     }
 
     private void showQuickActionBar(View view, final int position) {
         final Task task = adapter.getItem(position);
-        QuickActionBar bar = new QuickActionBar(activity);
+        QuickActionBar bar = new QuickActionBar(parentActivity);
         if (task.isDone) {
             bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, activity, R.drawable.checkbox_unchecked,
                     R.string.mark_task_undone));
@@ -128,22 +129,33 @@ public class DayTaskListView extends DraggableListView {
     }
 
     private void scheduleTask(final Task task) {
-        new DefaultDateSlider(activity, new OnDateSetListener() {
+        Calendar defaultTime = Calendar.getInstance();
+        defaultTime.setTimeInMillis(task.startTime.toMillis(false));
+
+        new DefaultDateSlider(parentActivity, new OnDateSetListener() {
             @Override
             public void onDateSet(@SuppressWarnings("unused") DateSlider view, Calendar selectedDate) {
-                task.startTime.set(Calendar.YEAR, selectedDate.get(Calendar.YEAR));
-                task.startTime.set(Calendar.MONTH, selectedDate.get(Calendar.MONTH));
-                task.startTime.set(Calendar.DAY_OF_MONTH, selectedDate.get(Calendar.DAY_OF_MONTH));
-                Calendar now = Calendar.getInstance();
+                task.startTime.year = selectedDate.get(Calendar.YEAR);
+                task.startTime.month = selectedDate.get(Calendar.MONTH);
+                task.startTime.monthDay = selectedDate.get(Calendar.DAY_OF_MONTH);
+                Time now = new Time();
+                now.setToNow();
                 if (task.startTime.before(now)) {
                     task.startTime = now;
                 }
                 task.isNew = false;
-                task.endTime = (Calendar) task.startTime.clone();
+                task.endTime = new Time(task.startTime);
                 taskManager.saveTask(task);
             }
-        }, task.startTime).show();
+        }, defaultTime).show();
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (parentActivity.flingDetector.onTouchEvent(ev)) {
+            return true;
+        }
+        return super.onTouchEvent(ev);
+    }
 
 }

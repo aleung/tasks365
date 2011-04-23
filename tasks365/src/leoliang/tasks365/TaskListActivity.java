@@ -20,19 +20,21 @@ package leoliang.tasks365;
 import greendroid.app.GDActivity;
 import greendroid.widget.ActionBarItem;
 import greendroid.widget.ActionBarItem.Type;
-
-import java.util.Calendar;
-
 import leoliang.tasks365.task.TaskManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.format.Time;
 import android.util.Config;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.ViewSwitcher;
 
 /**
@@ -48,6 +50,9 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
      */
     private static final int VIEW_ID = 1;
 
+    private static int HORIZONTAL_SCROLL_THRESHOLD = 50;
+    private static final long ANIMATION_DURATION = 400;
+
     // option menu
     private static final int MENU_SETTING = 1;
 
@@ -55,6 +60,8 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
     private MyApplication application;
     private ViewSwitcher viewSwitcher;
     private long calendarId = -1;
+    private Time displayDate = new Time();
+    GestureDetector flingDetector;
 
 
     @Override
@@ -73,11 +80,28 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
 
         viewSwitcher = (ViewSwitcher) findViewById(R.id.switcher);
         viewSwitcher.setFactory(this);
-        DayTaskListView taskListView = (DayTaskListView) viewSwitcher.getCurrentView();
-        taskListView.requestFocus();
 
         // TODO: set day by savedInstanceState
-        taskListView.initialize(Calendar.getInstance());
+        gotoToday();
+
+        flingDetector = new GestureDetector(this, new SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                Log.v(LOG_TAG, "TaskListActivity onFling");
+                int deltaX = (int) e2.getX() - (int) e1.getX();
+                int distanceX = Math.abs(deltaX);
+                int deltaY = (int) e2.getY() - (int) e1.getY();
+                int distanceY = Math.abs(deltaY);
+
+                if ((distanceX >= HORIZONTAL_SCROLL_THRESHOLD) && (distanceX > distanceY)) {
+                    boolean switchForward = initNextView(deltaX);
+                    DayTaskListView view = (DayTaskListView) viewSwitcher.getCurrentView();
+                    switchViews(switchForward, 0, view.getWidth());
+                    return true;
+                }
+                return false;
+            }
+        });
 
         // TODO: move it to background service
         taskManager = new TaskManager(this, application);
@@ -85,12 +109,69 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
         // end of TODO
     }
 
+    private boolean initNextView(int deltaX) {
+        boolean switchForward;
+        if (deltaX > 0) {
+            switchForward = false;
+        } else {
+            switchForward = true;
+        }
+
+        DayTaskListView view = (DayTaskListView) viewSwitcher.getNextView();
+        //view.layout(getLeft(), getTop(), getRight(), getBottom());
+
+        // TODO: next day or previous day
+
+        return switchForward;
+    }
+
+    private View switchViews(boolean forward, float xOffSet, float width) {
+        float progress = Math.abs(xOffSet) / width;
+        if (progress > 1.0f) {
+            progress = 1.0f;
+        }
+
+        float inFromXValue, inToXValue;
+        float outFromXValue, outToXValue;
+        if (forward) {
+            inFromXValue = 1.0f - progress;
+            inToXValue = 0.0f;
+            outFromXValue = -progress;
+            outToXValue = -1.0f;
+        } else {
+            inFromXValue = progress - 1.0f;
+            inToXValue = 0.0f;
+            outFromXValue = progress;
+            outToXValue = 1.0f;
+        }
+
+        // We have to allocate these animation objects each time we switch views
+        // because that is the only way to set the animation parameters.
+        TranslateAnimation inAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, inFromXValue,
+                Animation.RELATIVE_TO_SELF, inToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
+
+        TranslateAnimation outAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, outFromXValue,
+                Animation.RELATIVE_TO_SELF, outToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
+
+        // Reduce the animation duration based on how far we have already swiped.
+        long duration = (long) (ANIMATION_DURATION * (1.0f - progress));
+        inAnimation.setDuration(duration);
+        outAnimation.setDuration(duration);
+        viewSwitcher.setInAnimation(inAnimation);
+        viewSwitcher.setOutAnimation(outAnimation);
+
+        // TODO: release queries in current view
+        viewSwitcher.showNext();
+        DayTaskListView view = (DayTaskListView) viewSwitcher.getCurrentView();
+        view.requestFocus();
+        return view;
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
         if (application.getCalendarId() != calendarId) {
-            DayTaskListView taskListView = (DayTaskListView) viewSwitcher.getCurrentView();
-            taskListView.initialize(Calendar.getInstance());
+            gotoToday();
         }
     }
 
@@ -129,10 +210,25 @@ public class TaskListActivity extends GDActivity implements ViewSwitcher.ViewFac
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (flingDetector.onTouchEvent(ev)) {
+            return true;
+        }
+        return super.onTouchEvent(ev);
+    }
+
+    @Override
     public View makeView() {
         DayTaskListView view = new DayTaskListView(this);
         view.setId(VIEW_ID);
         view.setLayoutParams(new ViewSwitcher.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         return view;
+    }
+
+    private void gotoToday() {
+        DayTaskListView taskListView = (DayTaskListView) viewSwitcher.getCurrentView();
+        displayDate.setToNow();
+        taskListView.requestFocus();
+        taskListView.initialize(displayDate);
     }
 }
