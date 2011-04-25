@@ -127,22 +127,22 @@ public class TaskListActivity extends GDActivity {
         final Task task = adapter.getItem(position);
         QuickActionBar bar = new QuickActionBar(this);
         if (task.isDone) {
-            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, this, R.drawable.gd_action_bar_export,
+            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, this, R.drawable.checkbox_unchecked,
                     R.string.mark_task_undone));
         } else {
             if (!task.isPinned()) {
-                bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, this, R.drawable.gd_action_bar_export,
+                bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, this, R.drawable.checkbox_checked,
                         R.string.mark_task_done));
-                bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, this, R.drawable.gd_action_bar_edit,
+                bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, this, R.drawable.calendar,
                         R.string.schedule_task));
-                bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, this, R.drawable.gd_action_bar_edit,
+                bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, this, R.drawable.pencil,
                         R.string.edit_task));
             }
             if (task.isStarred) {
-                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, this, R.drawable.action_star_empty,
+                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, this, R.drawable.unstar,
                         R.string.unstar_task));
             } else {
-                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.action_star,
+                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.star_semi_empty,
                         R.string.star_task));
             }
         }
