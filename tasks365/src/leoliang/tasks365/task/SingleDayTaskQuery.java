@@ -19,7 +19,6 @@ public class SingleDayTaskQuery {
 
     private static final String LOG_TAG = "tasks365";
 
-    private List<Task> tasks = new ArrayList<Task>();
     private Activity activity;
     private long calendarId;
     private Cursor eventifyTaskCursor;
@@ -37,6 +36,13 @@ public class SingleDayTaskQuery {
         this.activity = activity;
         this.observer = observer;
         this.calendarId = calendarId;
+    }
+
+    public void close() {
+        activity.stopManagingCursor(eventifyTaskCursor);
+        eventifyTaskCursor.close();
+        activity.stopManagingCursor(normalTaskCursor);
+        normalTaskCursor.close();
     }
 
     /**
@@ -74,7 +80,10 @@ public class SingleDayTaskQuery {
         }
     }
 
-    private void loadTasks(Cursor cursor) {
+    private void loadTasks(Cursor cursor, List<Task> tasks) {
+        if (cursor.isClosed()) {
+            return;
+        }
         Log.v(LOG_TAG, "Load tasks: " + CursorHelper.getResultSet(cursor));
         if (!cursor.moveToFirst()) {
             Log.v(LOG_TAG, "Cursor is empty");
@@ -87,9 +96,9 @@ public class SingleDayTaskQuery {
     }
 
     private void loadTasks() {
-        tasks.clear();
-        loadTasks(normalTaskCursor);
-        loadTasks(eventifyTaskCursor);
+        final List<Task> tasks = new ArrayList<Task>();
+        loadTasks(normalTaskCursor, tasks);
+        loadTasks(eventifyTaskCursor, tasks);
         Log.v(LOG_TAG, "SingleDayTaskQuery: Loaded " + tasks.size() + " tasks.");
         activity.runOnUiThread(new Runnable() {
             @Override
