@@ -43,7 +43,7 @@ public class DayTaskListView extends DraggableListView {
         super(activity, null);
         parentActivity = activity;
         application = (MyApplication) activity.getApplication();
-        taskManager = new TaskManager(activity, application);
+        taskManager = new TaskManager(parentActivity, application);
     }
 
     public void initialize(Time date) {
@@ -89,22 +89,22 @@ public class DayTaskListView extends DraggableListView {
         final Task task = adapter.getItem(position);
         QuickActionBar bar = new QuickActionBar(parentActivity);
         if (task.isDone) {
-            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, activity, R.drawable.checkbox_unchecked,
+            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, parentActivity, R.drawable.checkbox_unchecked,
                     R.string.mark_task_undone));
         } else {
             if (!task.isPinned()) {
-                bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, activity, R.drawable.checkbox_checked,
+                bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, parentActivity, R.drawable.checkbox_checked,
                         R.string.mark_task_done));
-                bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, activity, R.drawable.calendar,
+                bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, parentActivity, R.drawable.calendar,
                         R.string.schedule_task));
-                bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, activity, R.drawable.pencil,
+                bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, parentActivity, R.drawable.pencil,
                         R.string.edit_task));
             }
             if (task.isStarred) {
-                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, activity, R.drawable.unstar,
+                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, parentActivity, R.drawable.unstar,
                         R.string.unstar_task));
             } else {
-                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, activity, R.drawable.star_semi_empty,
+                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, parentActivity, R.drawable.star_semi_empty,
                         R.string.star_task));
             }
         }
