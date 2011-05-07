@@ -13,6 +13,8 @@ import leoliang.tasks365.task.Task;
 import leoliang.tasks365.task.TaskManager;
 import leoliang.tasks365.task.TaskOrderMover;
 import leoliang.tasks365.task.TaskOrderMover.MoveNotAllowException;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.text.format.Time;
 import android.view.MotionEvent;
 import android.view.View;
@@ -136,6 +138,59 @@ public class DayTaskListView extends DraggableListView {
     }
 
     private void scheduleTask(final Task task) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(parentActivity);
+        builder.setTitle("Schedule to:");
+        CharSequence[] items = {"Today", "Tomorrow", "Day after tomorrow", "Weekend", "Next week", "A month later", "Pick a day ..."};
+        builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int item) {
+                Time date = new Time();
+                date.setToNow();
+                int advanceDays = 0;
+                switch (item) {
+                case 1: // tomorrow
+                    advanceDays = 1;
+                    break;
+                case 2: // day after tomorrow
+                    advanceDays = 2;
+                    break;
+                case 3: // weekend (Saturday or Sunday)
+                    if ((date.weekDay != Time.SATURDAY) && (date.weekDay != Time.SUNDAY)) {
+                        advanceDays = Time.SATURDAY - date.weekDay;
+                    }
+                    break;
+                case 4: // next Monday
+                    advanceDays = Time.MONDAY - date.weekDay;
+                    if (advanceDays <= 0) {
+                        advanceDays += 7;
+                    }
+                    break;
+                case 5: // a month later
+                    advanceDays = 30;
+                    break;
+                case 6: // pick a day
+                    scheduleTaskWithDatePicker(task);
+                    advanceDays = -1;
+                    break;
+                }
+
+                if (advanceDays >= 0) {
+                    date.monthDay += advanceDays;
+                    task.startTime.year = date.year;
+                    task.startTime.month = date.month;
+                    task.startTime.monthDay = date.monthDay;
+                    task.startTime.normalize(false);
+                    task.endTime = new Time(task.startTime);
+                    task.isNew = false;
+                    taskManager.saveTask(task);
+                }
+                dialog.dismiss();
+            }
+        });
+        builder.create().show();
+    }
+
+    private void scheduleTaskWithDatePicker(final Task task) {
         Calendar defaultTime = Calendar.getInstance();
         defaultTime.setTimeInMillis(task.startTime.toMillis(false));
 
