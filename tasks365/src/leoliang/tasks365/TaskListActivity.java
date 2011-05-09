@@ -18,6 +18,7 @@
 package leoliang.tasks365;
 
 import greendroid.app.GDActivity;
+import greendroid.widget.ActionBar;
 import greendroid.widget.ActionBarItem;
 import greendroid.widget.ActionBarItem.Type;
 import leoliang.tasks365.task.TaskManager;
@@ -62,6 +63,9 @@ public class TaskListActivity extends GDActivity {
     private long calendarId = -1;
     GestureDetector flingDetector;
 
+    public TaskListActivity() {
+        super(ActionBar.Type.Normal);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

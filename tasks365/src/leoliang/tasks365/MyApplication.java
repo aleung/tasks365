@@ -18,13 +18,18 @@ public class MyApplication extends GDApplication {
         super();
     }
 
+    @Override
+    public Class<?> getHomeActivityClass() {
+        return TaskListActivity.class;
+    }
+
     private SharedPreferences getPreferences() {
         return getSharedPreferences(PREFERENCES_FILE_NAME, MODE_PRIVATE);
     }
 
     /**
      * Get ID of calendar that this application integrates to.
-     * 
+     *
      * @return -1 if no calendar is chose
      */
     public long getCalendarId() {
@@ -33,7 +38,7 @@ public class MyApplication extends GDApplication {
 
     /**
      * Set ID of calendar that this application integrates to.
-     * 
+     *
      * @param id
      */
     public void setCalendarId(long id) {
