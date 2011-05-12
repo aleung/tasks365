@@ -86,14 +86,9 @@ public class TaskManager {
         }
     }
 
-    /**
-     * No archive, delete directly.
-     * 
-     * @param task
-     */
     private void archiveTask(Task task) {
         Log.v(LOG_TAG, "Archive task: " + task);
-        calendar.deleteTask(task.id);
+        // do nothing, leave it there
     }
 
     public void createTask(String title, String description) {
