@@ -1,1 +1,7 @@
+11Q2.2  (1)  - 2011.5    Enrich Features.
++ Task dragging
++ Switch day by guesture
++ Quick menu for scheduling task
++ more...
+
 11Q2.1  (1)  - 2011.4    Prototype version, functional usable.
