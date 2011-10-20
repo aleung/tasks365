@@ -593,6 +593,15 @@ public final class Calendar {
          */
         public static final String END_MINUTE = "endMinute";
 
+        public static final Cursor query(ContentResolver cr, String[] projection, long begin, long end, long calendarId) {
+            Uri.Builder builder = CONTENT_URI.buildUpon();
+            ContentUris.appendId(builder, begin);
+            ContentUris.appendId(builder, end);
+            return cr.query(builder.build(), projection, 
+                    Calendar.Events.CALENDAR_ID + "=" + calendarId + " AND " + Calendar.Events.ALL_DAY + "=0", 
+                    null, DEFAULT_SORT_ORDER);
+        }
+
         public static final Cursor query(ContentResolver cr, String[] projection,
                                          long begin, long end) {
             Uri.Builder builder = CONTENT_URI.buildUpon();

@@ -1,53 +1,71 @@
+/*
+ * Copyright (C) 2011 Leo Liang <leo.liang@gmail.com>
+ * Portions Copyright (C) 2006 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package leoliang.tasks365;
 
 import greendroid.app.GDActivity;
+import greendroid.widget.ActionBar;
 import greendroid.widget.ActionBarItem;
 import greendroid.widget.ActionBarItem.Type;
-import greendroid.widget.QuickAction;
-import greendroid.widget.QuickActionBar;
-import greendroid.widget.QuickActionWidget;
-import greendroid.widget.QuickActionWidget.OnQuickActionClickListener;
-
-import java.util.Calendar;
-
-import leoliang.tasks365.DraggableListView.DropListener;
-import leoliang.tasks365.TaskListAdapter.ViewHolder;
-import leoliang.tasks365.task.SingleDayTaskQuery;
-import leoliang.tasks365.task.Task;
-import android.app.DatePickerDialog;
-import android.app.DatePickerDialog.OnDateSetListener;
+import leoliang.tasks365.task.TaskManager;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.format.Time;
 import android.util.Config;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.DatePicker;
+import android.view.ViewGroup.LayoutParams;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
+import android.widget.ViewSwitcher;
 
+/**
+ * Main activity of the application, contains the task list of one day.
+ */
 public class TaskListActivity extends GDActivity {
 
     private static final String LOG_TAG = "tasks365";
 
-    // context menu / quick action
-    private static final int MENU_MARK_TASK_DONE = 1;
-    private static final int MENU_MARK_TASK_UNDONE = 2;
-    private static final int MENU_SCHEDULE_TASK = 3;
-    private static final int MENU_EDIT_TASK = 4;
-    private static final int MENU_STAR_TASK = 5;
-    private static final int MENU_UNSTAR_TASK = 6;
+    /**
+     * The view id used for all the views we create. It's OK to have all child views have the same ID. This ID is used
+     * to pick which view receives focus when a view hierarchy is saved / restore
+     */
+    private static final int VIEW_ID = 1;
+
+    private static int HORIZONTAL_SCROLL_THRESHOLD = 50;
+    private static final long ANIMATION_DURATION = 400;
 
     // option menu
     private static final int MENU_SETTING = 1;
 
-    private SingleDayTaskQuery query;
     private TaskManager taskManager;
-    private TaskListAdapter adapter;
     private MyApplication application;
+    private ListSwitcher listSwitcher;
     private long calendarId = -1;
+    GestureDetector flingDetector;
 
+    public TaskListActivity() {
+        super(ActionBar.Type.Normal);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,102 +81,40 @@ public class TaskListActivity extends GDActivity {
 
         addActionBarItem(Type.Add, R.id.action_bar_add);
 
-        adapter = new TaskListAdapter(this);
-        initializeQuery();
+        listSwitcher = new ListSwitcher((ViewSwitcher) findViewById(R.id.switcher));
 
-        DraggableListView listView = (DraggableListView) findViewById(R.id.taskList);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(new OnItemClickListener() {
+        // TODO: set day by savedInstanceState
+        listSwitcher.gotoToday();
+
+        flingDetector = new GestureDetector(this, new SimpleOnGestureListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ViewHolder viewHolder = (ViewHolder) view.getTag();
-                showQuickActionBar(viewHolder.title, position);
-            }
-        });
-        listView.setDropListener(new DropListener() {
-            @Override
-            public void drop(int from, int to) {
-                if (from == to) {
-                    return;
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                Log.v(LOG_TAG, "TaskListActivity onFling");
+                int deltaX = (int) e2.getX() - (int) e1.getX();
+                int distanceX = Math.abs(deltaX);
+                int deltaY = (int) e2.getY() - (int) e1.getY();
+                int distanceY = Math.abs(deltaY);
+
+                if ((distanceX >= HORIZONTAL_SCROLL_THRESHOLD) && (distanceX > distanceY)) {
+                    boolean switchForward = deltaX < 0;
+                    listSwitcher.switchList(switchForward, 0);
+                    return true;
                 }
-                moveTaskToPosition(from, to);
+                return false;
             }
         });
 
         // TODO: move it to background service
-        taskManager = new TaskManager(this, application.getCalendarId());
+        taskManager = new TaskManager(this, application);
         taskManager.dealWithTasksInThePast();
         // end of TODO
-    }
-
-    /**
-     * The list is sort by start time of the tasks. To move a task, the start time has to be updated.
-     * 
-     * @param originalPosition
-     * @param newPosition
-     */
-    private void moveTaskToPosition(int originalPosition, int newPosition) {
-        Log.d(LOG_TAG, "moveTaskToPosition: " + originalPosition + " -> " + newPosition);
-
-        if (newPosition >= adapter.getCount()) {
-            Log.w(LOG_TAG, "moveTaskToPosition: Invalid new position " + newPosition);
-            return;
-        }
-
-        int targetPosition = newPosition;
-        if (newPosition > originalPosition) {
-            targetPosition = newPosition + 1;
-        }
-
-        Task taskToBeMoved = adapter.getItem(originalPosition);
-        if (!taskToBeMoved.isAllDay || taskToBeMoved.isDone) {
-            // TODO: notify user: non all day task and done task isn't draggable
-            Log.i(LOG_TAG, "Non all day task and done task is not allow to change start time.");
-            return;
-        }
-
-        Task prevItem = null;
-        Calendar prevItemTime;
-        if (targetPosition == 0) {
-            prevItemTime = Task.beginOfToday();
-        } else {
-            prevItem = adapter.getItem(targetPosition - 1);
-            prevItemTime = getTaskStartTime(prevItem);
-        }
-
-        Calendar nextItemTime;
-        if (targetPosition < adapter.getCount()) {
-            nextItemTime = getTaskStartTime(adapter.getItem(targetPosition));
-        } else {
-            nextItemTime = Task.endOfToday();
-        }
-
-        if (prevItemTime.equals(nextItemTime)) {
-            if ((targetPosition > 0) && prevItem.isAllDay && !prevItem.isDone) {
-                moveTaskToPosition(targetPosition - 1, targetPosition - 1);
-            }
-            prevItemTime = getTaskStartTime(prevItem);
-        }
-
-        taskToBeMoved.isNew = false;
-        taskToBeMoved.startTime.setTimeInMillis((prevItemTime.getTimeInMillis() + nextItemTime.getTimeInMillis()) / 2);
-        taskToBeMoved.endTime = (Calendar) taskToBeMoved.startTime.clone();
-        taskManager.saveTask(taskToBeMoved);
-    }
-
-    private Calendar getTaskStartTime(Task task) {
-        if (task.isDone) {
-            return Task.endOfToday();
-        }
-        return task.startTime;
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         if (application.getCalendarId() != calendarId) {
-            // setting has been changed, re-initialize query to show new calendar
-            initializeQuery();
+            listSwitcher.gotoToday();
         }
     }
 
@@ -167,75 +123,6 @@ public class TaskListActivity extends GDActivity {
             startActivity(new Intent(application, CalendarChooseActivity.class));
         }
         // TODO: check calendar existence, is synced
-    }
-
-    private void initializeQuery() {
-        calendarId = application.getCalendarId();
-        query = new SingleDayTaskQuery(this, calendarId, adapter);
-        query.query(Calendar.getInstance());
-    }
-
-    private void showQuickActionBar(View view, final int position) {
-        final Task task = adapter.getItem(position);
-        QuickActionBar bar = new QuickActionBar(this);
-        if (task.isDone) {
-            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_UNDONE, this, R.drawable.gd_action_bar_export,
-                    R.string.mark_task_undone));
-        } else {
-            bar.addQuickAction(new QuickAction(MENU_MARK_TASK_DONE, this, R.drawable.gd_action_bar_export,
-                    R.string.mark_task_done));
-            if (task.isStarred) {
-                bar.addQuickAction(new QuickAction(MENU_UNSTAR_TASK, this, R.drawable.action_star_empty,
-                        R.string.unstar_task));
-            } else {
-                bar.addQuickAction(new QuickAction(MENU_STAR_TASK, this, R.drawable.action_star,
-                        R.string.star_task));
-            }
-            bar.addQuickAction(new QuickAction(MENU_SCHEDULE_TASK, this, R.drawable.gd_action_bar_edit,
-                    R.string.schedule_task));
-            bar.addQuickAction(new QuickAction(MENU_EDIT_TASK, this, R.drawable.gd_action_bar_edit, R.string.edit_task));
-        }
-        bar.setOnQuickActionClickListener(new OnQuickActionClickListener() {
-            @Override
-            public void onQuickActionClicked(QuickActionWidget widget, int actionId) {
-                switch (actionId) {
-                case MENU_MARK_TASK_DONE:
-                    taskManager.markTaskDone(task);
-                    break;
-                case MENU_MARK_TASK_UNDONE:
-                    taskManager.markTaskUndone(task);
-                    break;
-                case MENU_SCHEDULE_TASK:
-                    scheduleTask(task);
-                    break;
-                case MENU_STAR_TASK:
-                    taskManager.starTask(task);
-                    break;
-                case MENU_UNSTAR_TASK:
-                    taskManager.unstarTask(task);
-                    break;
-                }
-            }
-        });
-        bar.show(view);
-    }
-
-    private void scheduleTask(final Task task) {
-        new DatePickerDialog(this, new OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-                task.startTime.set(Calendar.YEAR, year);
-                task.startTime.set(Calendar.MONTH, monthOfYear);
-                task.startTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                Calendar now = Calendar.getInstance();
-                if (task.startTime.before(now)) {
-                    task.startTime = now;
-                }
-                task.isNew = false;
-                taskManager.saveTask(task);
-            }
-        }, task.startTime.get(Calendar.YEAR), task.startTime.get(Calendar.MONTH),
-                task.startTime.get(Calendar.DAY_OF_MONTH) + 1).show();
     }
 
     @Override
@@ -263,5 +150,112 @@ public class TaskListActivity extends GDActivity {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if (flingDetector.onTouchEvent(ev)) {
+            return true;
+        }
+        return super.onTouchEvent(ev);
+    }
+
+
+    class ListSwitcher implements ViewSwitcher.ViewFactory {
+
+        private Time displayDate = new Time();
+        private ViewSwitcher viewSwitcher;
+
+        public ListSwitcher(ViewSwitcher viewSwitcher) {
+            viewSwitcher.setFactory(this);
+            this.viewSwitcher = viewSwitcher;
+        }
+
+        @Override
+        public View makeView() {
+            DayTaskListView view = new DayTaskListView(TaskListActivity.this);
+            view.setId(VIEW_ID);
+            view.setLayoutParams(new ViewSwitcher.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            return view;
+        }
+
+        public void switchList(boolean forward, float xOffSet) {
+            int width = viewSwitcher.getCurrentView().getWidth();
+            float progress = Math.abs(xOffSet) / width;
+            if (progress > 1.0f) {
+                progress = 1.0f;
+            }
+
+            float inFromXValue, inToXValue;
+            float outFromXValue, outToXValue;
+            if (forward) {
+                inFromXValue = 1.0f - progress;
+                inToXValue = 0.0f;
+                outFromXValue = -progress;
+                outToXValue = -1.0f;
+            } else {
+                inFromXValue = progress - 1.0f;
+                inToXValue = 0.0f;
+                outFromXValue = progress;
+                outToXValue = 1.0f;
+            }
+
+            // We have to allocate these animation objects each time we switch views
+            // because that is the only way to set the animation parameters.
+            TranslateAnimation inAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, inFromXValue,
+                    Animation.RELATIVE_TO_SELF, inToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
+
+            TranslateAnimation outAnimation = new TranslateAnimation(Animation.RELATIVE_TO_SELF, outFromXValue,
+                    Animation.RELATIVE_TO_SELF, outToXValue, Animation.ABSOLUTE, 0.0f, Animation.ABSOLUTE, 0.0f);
+
+            // Reduce the animation duration based on how far we have already swiped.
+            long duration = (long) (ANIMATION_DURATION * (1.0f - progress));
+            inAnimation.setDuration(duration);
+            outAnimation.setDuration(duration);
+            viewSwitcher.setInAnimation(inAnimation);
+            viewSwitcher.setOutAnimation(outAnimation);
+
+            if (forward) {
+                gotoNextDay();
+            } else {
+                gotoPrevDay();
+            }
+        }
+
+        public void gotoToday() {
+            displayDate.setToNow();
+            update();
+        }
+
+        public void gotoNextDay() {
+            displayDate.monthDay += 1;
+            update();
+        }
+
+        public void gotoPrevDay() {
+            displayDate.monthDay -= 1;
+            update();
+        }
+
+        private void update() {
+            displayDate.normalize(false);
+            updateTitle();
+            switchList();
+        }
+
+        private void updateTitle() {
+            setTitle(displayDate.format("%a %m/%d"));
+        }
+
+        private void switchList() {
+            DayTaskListView currentView = (DayTaskListView) viewSwitcher.getCurrentView();
+            currentView.terminate();
+
+            viewSwitcher.showNext();
+
+            DayTaskListView taskListView = (DayTaskListView) viewSwitcher.getCurrentView();
+            taskListView.requestFocus();
+            taskListView.initialize(displayDate);
+        }
     }
 }

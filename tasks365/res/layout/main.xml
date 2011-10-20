@@ -5,10 +5,13 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
 
-    <leoliang.tasks365.DraggableListView android:id="@+id/taskList" 
-        android:layout_width="wrap_content"
+    <FrameLayout
+        android:layout_width="fill_parent"
         android:layout_height="0dip"
-        android:layout_weight="1"
-    />     
+        android:layout_weight="1">
+        <ViewSwitcher android:id="@+id/switcher"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" />
+    </FrameLayout>
 
 </LinearLayout>
